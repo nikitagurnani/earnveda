@@ -3,96 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EarnVeda - Secure Login</title>
+    <title>EarnVeda - Login</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .auth-container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
-        h2 { color: #1abc9c; margin-bottom: 5px; }
-        p.subtitle { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
-        .rules { text-align: left; font-size: 11px; color: #e67e22; margin: 5px 0 15px 5px; line-height: 1.4; }
-        button { width: 100%; padding: 14px; background: #1abc9c; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #16a085; }
-        .footer-warn { color: #e74c3c; font-size: 12px; margin-top: 15px; font-weight: bold; border-top: 1px solid #eee; padding-top: 10px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; text-align: center; padding: 40px 20px; }
+        .login-container { background: white; padding: 30px; border-radius: 15px; display: inline-block; box-shadow: 0px 4px 15px rgba(0,0,0,0.2); max-width: 400px; width: 100%; }
+        h2 { color: #1a73e8; margin-bottom: 20px; }
+        input { display: block; width: 100%; margin: 12px 0; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { background-color: #28a745; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-size: 18px; font-weight: bold; transition: 0.3s; }
+        button:hover { background-color: #218838; }
+        .warning-text { color: #d93025; font-size: 13px; margin-top: 15px; font-weight: bold; background: #fce8e6; padding: 10px; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-<div class="auth-container">
-    <h2>EarnVeda 💰</h2>
-    <p class="subtitle">Apna secure account banayein</p>
-    
-    <input type="number" id="phone" placeholder="Mobile Number">
-    
-    <div class="rules">
-        * Min 8 characters<br>
-        * Must include: ABC, abc, 123, & @#$
-    </div>
-    
-    <input type="password" id="pass1" placeholder="Create Strong Password">
-    <input type="password" id="pass2" placeholder="Confirm Password">
-    
-    <button onclick="validateAndProcess()">Login / Register</button>
-    
-    <div class="footer-warn">
-        ⚠️ Password bhulne par balance lost ho jayega.<br>Reset option available nahi hai!
-    </div>
+<div class="login-container">
+    <h2>EarnVeda Login</h2>
+    <input type="number" id="phone" placeholder="Mobile Number (e.g. 917067...)" required>
+    <input type="password" id="password" placeholder="Password" required>
+    <button onclick="handleAuth()">Login / Register</button>
+    <div class="warning-text">⚠️ RUKIYE! Account banane se pehle iska SCREENSHOT le lein. Password bhoolne par account wapas nahi milega!</div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-
 <script>
-    const firebaseConfig = { apiKey: "AIzaSyCLrqzC0q_i7EzWdw_aoGRvI-qD_2kMsc", projectId: "earnify-official" };
-    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-    const db = firebase.firestore();
+    // Nikita's Original Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
+        authDomain: "earnify-official.firebaseapp.com",
+        databaseURL: "https://earnify-official-default-rtdb.firebaseio.com",
+        projectId: "earnify-official",
+        storageBucket: "earnify-official.firebasestorage.app",
+        messagingSenderId: "392652401236",
+        appId: "1:392652401236:web:00bd6e145cb6ac1f6c9bc1"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
 
-    function validateAndProcess() {
+    function handleAuth() {
         const phone = document.getElementById('phone').value;
-        const p1 = document.getElementById('pass1').value;
-        const p2 = document.getElementById('pass2').value;
+        const password = document.getElementById('password').value;
 
-        if(phone.length < 10) { alert("Kripya sahi mobile number dalein!"); return; }
+        if (phone.length < 10) { alert("Kripya sahi mobile number daalein!"); return; }
         
-        const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
-        
-        if(!strongRegex.test(p1)) {
-            alert("Password kamzor hai! ABC, abc, 123 aur special symbol use karein.");
+        // Nikita's Strict Password Rules
+        const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passRegex.test(password)) {
+            alert("❌ Weak Password!\nKam se kam ek Capital Letter, ek Number, aur ek Special Character (@#$) hona chahiye.");
             return;
         }
 
-        if(p1 !== p2) {
-            alert("Dono password match nahi kar rahe!");
-            return;
+        // Final Screenshot Confirmation
+        if(confirm("⚠️ RUKIYE! Kya aapne is screen ka SCREENSHOT le liya hai? Password yaad rakhna aapki zimmedari hai.")) {
+            const email = phone + "@earnveda.com";
+            
+            firebase.auth().createUserWithEmailAndPassword(email, password)
+                .then(() => {
+                    alert("Account Created Successfully!");
+                    window.location.href = "dashboard.html";
+                })
+                .catch((error) => {
+                    if (error.code === 'auth/email-already-in-use') {
+                        firebase.auth().signInWithEmailAndPassword(email, password)
+                            .then(() => {
+                                // Admin Check Logic
+                                if (phone === "917067007802") {
+                                    window.location.href = "admin-control-786.html";
+                                } else {
+                                    window.location.href = "dashboard.html";
+                                }
+                            })
+                            .catch((err) => alert("Galti: Password sahi nahi hai!"));
+                    } else {
+                        alert("Error: " + error.message);
+                    }
+                });
         }
-
-        db.collection("users").doc(phone).get().then((doc) => {
-            if(doc.exists) {
-                if(doc.data().password === p1) {
-                    localStorage.setItem("userPhone", phone);
-                    // Yahan humne folder ka rasta badal diya hai
-                    window.location.href = "earnveda/dashboard.html";
-                } else {
-                    alert("Galat Password!");
-                }
-            } else {
-                const confirmReg = confirm("Account banane se pehle iska SCREENSHOT le lein!");
-                if(confirmReg) {
-                    db.collection("users").doc(phone).set({
-                        balance: 0,
-                        password: p1,
-                        notification: "Welcome to EarnVeda!",
-                        regDate: new Date().toISOString()
-                    }).then(() => {
-                        localStorage.setItem("userPhone", phone);
-                        // Yahan bhi badlav kar diya hai
-                        window.location.href = "earnveda/dashboard.html";
-                    });
-                }
-            }
-        });
     }
 </script>
-
 </body>
 </html>
