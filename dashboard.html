@@ -3,100 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EarnVeda - Secure Login</title>
+    <title>EarnVeda - Dashboard</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .auth-container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
-        h2 { color: #1abc9c; margin-bottom: 5px; }
-        p.subtitle { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
-        .rules { text-align: left; font-size: 11px; color: #e67e22; margin: 5px 0 15px 5px; line-height: 1.4; }
-        button { width: 100%; padding: 14px; background: #1abc9c; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #16a085; }
-        .footer-warn { color: #e74c3c; font-size: 12px; margin-top: 15px; font-weight: bold; border-top: 1px solid #eee; padding-top: 10px; }
+        body { font-family: sans-serif; background: #f4f7f6; text-align: center; margin: 0; padding: 20px; }
+        .header { background: #1a73e8; color: white; padding: 20px; border-radius: 0 0 20px 20px; margin-bottom: 20px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; width: 90%; max-width: 400px; }
+        .balance { font-size: 32px; font-weight: bold; color: #28a745; margin: 15px 0; }
+        .status-badge { background: #e8f0fe; color: #1967d2; padding: 5px 15px; border-radius: 20px; font-size: 14px; }
+        button { background: #1a73e8; color: white; border: none; padding: 12px 25px; border-radius: 8px; margin-top: 20px; width: 100%; cursor: pointer; font-size: 16px; }
     </style>
 </head>
 <body>
 
-<div class="auth-container">
-    <h2>EarnVeda 💰</h2>
-    <p class="subtitle">Apna secure account banayein</p>
-    
-    <input type="number" id="phone" placeholder="Mobile Number">
-    
-    <div class="rules">
-        * Min 8 characters<br>
-        * Must include: ABC, abc, 123, & @#$
+    <div class="header">
+        <h2>Welcome to EarnVeda</h2>
     </div>
-    
-    <input type="password" id="pass1" placeholder="Create Strong Password">
-    <input type="password" id="pass2" placeholder="Confirm Password">
-    
-    <button onclick="validateAndProcess()">Login / Register</button>
-    
-    <div class="footer-warn">
-        ⚠️ Password bhulne par balance lost ho jayega.<br>Reset option available nahi hai!
-    </div>
-</div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <div class="card">
+        <p>Your Current Balance</p>
+        <div class="balance">₹<span id="balanceDisplay">0.00</span></div>
+        <div class="status-badge" id="statusDisplay">Checking Status...</div>
+        <button onclick="window.location.reload()">Refresh Balance</button>
+    </div>
 
 <script>
-    // Firebase Config (Apne project ki details yahan rahegi)
-    const firebaseConfig = { apiKey: "AIzaSyCLrqzC0q_i7EzWdw_aoGRvI-qD_2kMsc", projectId: "earnify-official" };
-    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-    const db = firebase.firestore();
+    // Paste your Firebase Config here
+    const firebaseConfig = {
+        apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
+        authDomain: "earnify-official.firebaseapp.com",
+        databaseURL: "https://earnify-official-default-rtdb.firebaseio.com",
+        projectId: "earnify-official",
+        storageBucket: "earnify-official.firebasestorage.app",
+        messagingSenderId: "392652401236",
+        appId: "1:392652401236:web:00bd6e145cb6ac1f6c9bc1"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    function validateAndProcess() {
-        const phone = document.getElementById('phone').value;
-        const p1 = document.getElementById('pass1').value;
-        const p2 = document.getElementById('pass2').value;
-
-        // 1. Basic Checks
-        if(phone.length < 10) { alert("Kripya sahi mobile number dalein!"); return; }
-        
-        // 2. Strong Password Regex (Capital, Small, Number, Special Char)
-        const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
-        
-        if(!strongRegex.test(p1)) {
-            alert("Password kamzor hai! ABC, abc, 123 aur special symbol use karein.");
-            return;
-        }
-
-        if(p1 !== p2) {
-            alert("Dono password match nahi kar rahe!");
-            return;
-        }
-
-        // 3. Firebase Logic
-        db.collection("users").doc(phone).get().then((doc) => {
-            if(doc.exists) {
-                // Purana User: Password Check
-                if(doc.data().password === p1) {
-                    localStorage.setItem("userPhone", phone);
-                    window.location.href = "dashboard.html";
-                } else {
-                    alert("Galat Password! Ise reset nahi kiya ja sakta.");
-                }
+    // Logic to fetch user's own data
+    // For now, we use a simple prompt for testing. In final app, this will be automatic.
+    const userPhone = prompt("Enter your registered mobile number to see balance:");
+    if(userPhone) {
+        db.ref('users/' + userPhone).on('value', (snapshot) => {
+            const data = snapshot.val();
+            if(data) {
+                document.getElementById('balanceDisplay').innerText = data.balance || "0.00";
+                document.getElementById('statusDisplay').innerText = data.status || "Active";
             } else {
-                // Naya User: Registration
-                const confirmReg = confirm("Account banane se pehle iska SCREENSHOT le lein! Kya aapne password yaad kar liya hai?");
-                if(confirmReg) {
-                    db.collection("users").doc(phone).set({
-                        balance: 0,
-                        password: p1,
-                        notification: "Welcome to EarnVeda! Mehnat karein, kamayein.",
-                        regDate: new Date().toISOString()
-                    }).then(() => {
-                        localStorage.setItem("userPhone", phone);
-                        window.location.href = "dashboard.html";
-                    });
-                }
+                alert("Account not found!");
             }
         });
     }
 </script>
-
 </body>
 </html>
