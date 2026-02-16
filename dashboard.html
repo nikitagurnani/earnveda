@@ -3,40 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EarnVeda - Earning Dashboard</title>
+    <title>EarnVeda - User Dashboard</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <style>
-        :root { --primary: #1a73e8; --success: #28a745; --dark: #202124; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
-        .app-bar { background: var(--primary); color: white; padding: 15px; font-size: 20px; font-weight: bold; }
-        .balance-card { background: white; margin: 20px; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .balance-amount { font-size: 40px; color: var(--success); font-weight: bold; margin: 10px 0; }
-        .action-btn { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 10px; width: 80%; font-size: 16px; margin: 10px 0; cursor: pointer; font-weight: bold; }
-        .withdraw-section { background: #fff; margin: 20px; padding: 20px; border-radius: 15px; border: 1px dashed #ccc; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
-        .footer-text { font-size: 12px; color: #666; margin-top: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 0; }
+        .header { background: #1a73e8; color: white; padding: 25px; text-align: center; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
+        .card { background: white; margin: 20px auto; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; text-align: center; }
+        .balance { font-size: 36px; font-weight: bold; color: #28a745; margin: 10px 0; }
+        .btn { background: #1a73e8; color: white; border: none; padding: 12px 20px; border-radius: 8px; width: 100%; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        .btn-withdraw { background: #202124; margin-top: 15px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
     </style>
 </head>
 <body>
-
-<div class="app-bar">EarnVeda Dashboard</div>
-
-<div class="balance-card">
-    <p>Available Balance</p>
-    <div class="balance-amount">₹<span id="bal">0.00</span></div>
-    <button class="action-btn" onclick="watchAd()">📺 Watch Ad & Earn ₹0.10</button>
-</div>
-
-<div class="withdraw-section">
-    <h3>Withdraw Money</h3>
-    <input type="text" id="paytmId" placeholder="Enter Paytm Number / UPI ID">
-    <button class="action-btn" style="background:#000" onclick="requestWithdraw()">Withdraw Now</button>
-</div>
-
-<p class="footer-text">User ID: <span id="userId">Loading...</span></p>
-
+    <div class="header"><h3>EarnVeda Wallet</h3></div>
+    <div class="card">
+        <p>Current Balance</p>
+        <div class="balance">₹<span id="bal">0.00</span></div>
+        <button class="btn" onclick="watchAd()">📺 Watch Ad (+₹0.10)</button>
+    </div>
+    <div class="card">
+        <h4>Withdrawal</h4>
+        <input type="text" id="pay_id" placeholder="Paytm No / UPI ID">
+        <button class="btn btn-withdraw" onclick="withdraw()">Withdraw Now</button>
+    </div>
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
@@ -51,46 +43,31 @@
     const db = firebase.database();
     const auth = firebase.auth();
 
-    // Securely get current logged-in user
+    let userPhone = "";
     auth.onAuthStateChanged((user) => {
         if (user) {
-            const phone = user.email.split('@')[0];
-            document.getElementById('userId').innerText = phone;
-            loadData(phone);
-        } else {
-            window.location.href = "index.html";
-        }
+            userPhone = user.email.split('@')[0];
+            db.ref('users/' + userPhone).on('value', (s) => {
+                document.getElementById('bal').innerText = s.val().balance || "0.00";
+            });
+        } else { window.location.href = "index.html"; }
     });
 
-    function loadData(phone) {
-        db.ref('users/' + phone).on('value', (snap) => {
-            const data = snap.val();
-            if(data) { document.getElementById('bal').innerText = data.balance || "0.00"; }
-        });
-    }
-
     function watchAd() {
-        alert("Ad loading... (Imagine a 30s video here)");
-        // Add AdMob/Unity logic here later
-        alert("Ad Finished! ₹0.10 added.");
-        const phone = document.getElementById('userId').innerText;
-        db.ref('users/' + phone).transaction((user) => {
-            if (user) {
-                user.balance = (parseFloat(user.balance || 0) + 0.10).toFixed(2);
-            }
-            return user;
+        alert("Ad playing... Done!");
+        db.ref('users/' + userPhone).transaction((u) => {
+            if(u) u.balance = (parseFloat(u.balance || 0) + 0.10).toFixed(2);
+            return u;
         });
     }
 
-    function requestWithdraw() {
-        const id = document.getElementById('paytmId').value;
+    function withdraw() {
+        const id = document.getElementById('pay_id').value;
         const bal = document.getElementById('bal').innerText;
-        if(id.length < 5) return alert("Sahi Paytm/UPI ID dalein!");
-        if(parseFloat(bal) < 1) return alert("Minimum ₹1 chahiye withdraw ke liye!");
-        
-        const phone = document.getElementById('userId').innerText;
-        db.ref('withdrawals').push({ phone, id, amount: bal, status: "Pending" })
-          .then(() => alert("Request Bheji Gayi! 24 ghante mein paise mil jayenge."));
+        if(id.length < 5) return alert("Sahi ID dalein!");
+        if(parseFloat(bal) < 1.0) return alert("Minimum ₹1.0 chahiye!");
+        db.ref('withdrawals').push({ phone: userPhone, pay_id: id, amount: bal, status: "Pending" })
+          .then(() => alert("Request Bheji Gayi!"));
     }
 </script>
 </body>
