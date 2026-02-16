@@ -3,33 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EarnVeda - Dashboard</title>
+    <title>EarnVeda - Earning Dashboard</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; text-align: center; margin: 0; padding: 20px; }
-        .header { background: #1a73e8; color: white; padding: 20px; border-radius: 0 0 20px 20px; margin-bottom: 20px; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; width: 90%; max-width: 400px; }
-        .balance { font-size: 32px; font-weight: bold; color: #28a745; margin: 15px 0; }
-        .status-badge { background: #e8f0fe; color: #1967d2; padding: 5px 15px; border-radius: 20px; font-size: 14px; }
-        button { background: #1a73e8; color: white; border: none; padding: 12px 25px; border-radius: 8px; margin-top: 20px; width: 100%; cursor: pointer; font-size: 16px; }
+        :root { --primary: #1a73e8; --success: #28a745; --dark: #202124; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
+        .app-bar { background: var(--primary); color: white; padding: 15px; font-size: 20px; font-weight: bold; }
+        .balance-card { background: white; margin: 20px; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .balance-amount { font-size: 40px; color: var(--success); font-weight: bold; margin: 10px 0; }
+        .action-btn { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 10px; width: 80%; font-size: 16px; margin: 10px 0; cursor: pointer; font-weight: bold; }
+        .withdraw-section { background: #fff; margin: 20px; padding: 20px; border-radius: 15px; border: 1px dashed #ccc; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
+        .footer-text { font-size: 12px; color: #666; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h2>Welcome to EarnVeda</h2>
-    </div>
+<div class="app-bar">EarnVeda Dashboard</div>
 
-    <div class="card">
-        <p>Your Current Balance</p>
-        <div class="balance">₹<span id="balanceDisplay">0.00</span></div>
-        <div class="status-badge" id="statusDisplay">Checking Status...</div>
-        <button onclick="window.location.reload()">Refresh Balance</button>
-    </div>
+<div class="balance-card">
+    <p>Available Balance</p>
+    <div class="balance-amount">₹<span id="bal">0.00</span></div>
+    <button class="action-btn" onclick="watchAd()">📺 Watch Ad & Earn ₹0.10</button>
+</div>
+
+<div class="withdraw-section">
+    <h3>Withdraw Money</h3>
+    <input type="text" id="paytmId" placeholder="Enter Paytm Number / UPI ID">
+    <button class="action-btn" style="background:#000" onclick="requestWithdraw()">Withdraw Now</button>
+</div>
+
+<p class="footer-text">User ID: <span id="userId">Loading...</span></p>
 
 <script>
-    // Paste your Firebase Config here
     const firebaseConfig = {
         apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
         authDomain: "earnify-official.firebaseapp.com",
@@ -41,20 +49,48 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const auth = firebase.auth();
 
-    // Logic to fetch user's own data
-    // For now, we use a simple prompt for testing. In final app, this will be automatic.
-    const userPhone = prompt("Enter your registered mobile number to see balance:");
-    if(userPhone) {
-        db.ref('users/' + userPhone).on('value', (snapshot) => {
-            const data = snapshot.val();
-            if(data) {
-                document.getElementById('balanceDisplay').innerText = data.balance || "0.00";
-                document.getElementById('statusDisplay').innerText = data.status || "Active";
-            } else {
-                alert("Account not found!");
-            }
+    // Securely get current logged-in user
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            const phone = user.email.split('@')[0];
+            document.getElementById('userId').innerText = phone;
+            loadData(phone);
+        } else {
+            window.location.href = "index.html";
+        }
+    });
+
+    function loadData(phone) {
+        db.ref('users/' + phone).on('value', (snap) => {
+            const data = snap.val();
+            if(data) { document.getElementById('bal').innerText = data.balance || "0.00"; }
         });
+    }
+
+    function watchAd() {
+        alert("Ad loading... (Imagine a 30s video here)");
+        // Add AdMob/Unity logic here later
+        alert("Ad Finished! ₹0.10 added.");
+        const phone = document.getElementById('userId').innerText;
+        db.ref('users/' + phone).transaction((user) => {
+            if (user) {
+                user.balance = (parseFloat(user.balance || 0) + 0.10).toFixed(2);
+            }
+            return user;
+        });
+    }
+
+    function requestWithdraw() {
+        const id = document.getElementById('paytmId').value;
+        const bal = document.getElementById('bal').innerText;
+        if(id.length < 5) return alert("Sahi Paytm/UPI ID dalein!");
+        if(parseFloat(bal) < 1) return alert("Minimum ₹1 chahiye withdraw ke liye!");
+        
+        const phone = document.getElementById('userId').innerText;
+        db.ref('withdrawals').push({ phone, id, amount: bal, status: "Pending" })
+          .then(() => alert("Request Bheji Gayi! 24 ghante mein paise mil jayenge."));
     }
 </script>
 </body>
