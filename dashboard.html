@@ -4,35 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="monetag" content="c72238220f80276f68c30169d6d8561e">
-    <title>EarnVeda Dashboard</title>
+    <title>EarnVeda Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; text-align: center; }
-        .app-bar { background: #1a73e8; color: white; padding: 20px; font-size: 22px; font-weight: bold; }
-        .card { background: white; margin: 20px; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .balance { font-size: 48px; color: #28a745; font-weight: bold; margin: 10px 0; }
-        .btn-task { background: #1a73e8; color: white; border: none; padding: 18px; border-radius: 12px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .withdraw-section { background: #fff; margin: 20px; padding: 20px; border-radius: 20px; border: 1px solid #ddd; }
-        input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ccc; border-radius: 10px; box-sizing: border-box; }
-        .btn-withdraw { background: #000; color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; }
+        body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding-bottom: 70px; }
+        .header { background: #1a73e8; color: white; padding: 20px; font-size: 20px; font-weight: bold; }
+        .tab-content { display: none; padding: 20px; }
+        .active { display: block; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .balance { font-size: 35px; color: #28a745; font-weight: bold; }
+        .btn { background: #1a73e8; color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-size: 16px; cursor: pointer; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; }
+        .nav-item { cursor: pointer; color: #555; font-size: 12px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        .history-item { text-align: left; border-bottom: 1px solid #eee; padding: 10px 0; }
     </style>
 </head>
 <body>
 
-<div class="app-bar">EarnVeda Dashboard</div>
+<div class="header" id="headerTitle">Home</div>
 
-<div class="card">
-    <p>Available Balance</p>
-    <div class="balance">₹<span id="bal">0.00</span></div>
-    <button class="btn-task" id="taskBtn" onclick="handleAdClick()">📺 Watch Video & Earn ₹0.10</button>
+<div id="home" class="tab-content active">
+    <div class="card">
+        <p>Your Balance</p>
+        <div class="balance">₹<span id="bal">0.00</span></div>
+    </div>
+    <div class="card">
+        <h3>Daily Task</h3>
+        <button class="btn" id="taskBtn" onclick="watchAd()">Watch Ad & Earn ₹0.10</button>
+    </div>
 </div>
 
-<div class="withdraw-section">
-    <h3>Withdraw (Min ₹100)</h3>
-    <input type="text" id="upi_id" placeholder="Enter UPI ID or Paytm Number">
-    <button class="btn-withdraw" onclick="submitWithdrawal()">Withdraw Now</button>
+<div id="trans" class="tab-content">
+    <div class="card">
+        <h3>Transaction History</h3>
+        <div id="historyList">No transactions yet.</div>
+    </div>
+</div>
+
+<div id="profile" class="tab-content">
+    <div class="card">
+        <h3>User Profile</h3>
+        <p>Phone: <span id="userPhoneDisplay">Loading...</span></p>
+        <button class="btn" style="background:red" onclick="firebase.auth().signOut()">Logout</button>
+    </div>
+    <div class="card">
+        <h3>Withdraw (Min ₹100)</h3>
+        <input type="text" id="upi" placeholder="Enter UPI ID">
+        <button class="btn" style="background:#000" onclick="withdraw()">Withdraw Now</button>
+    </div>
+</div>
+
+<div class="nav-bar">
+    <div class="nav-item" onclick="showTab('home', 'Home')">🏠<br>Home</div>
+    <div class="nav-item" onclick="showTab('trans', 'History')">📊<br>History</div>
+    <div class="nav-item" onclick="showTab('profile', 'Profile')">👤<br>Profile</div>
 </div>
 
 <script>
@@ -50,66 +78,62 @@
     const auth = firebase.auth();
 
     let userPhone = "";
-    let isWatching = false; // Isse double click rukega
-    const adLinks = [
-        "https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311",
-        "https://omg10.com/4/10581177"
-    ];
+    const adLinks = ["https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311", "https://omg10.com/4/10581177"];
 
     auth.onAuthStateChanged((user) => {
         if (user) {
             userPhone = user.email.split('@')[0];
-            db.ref('users/' + userPhone).on('value', (s) => {
-                if(s.val()) document.getElementById('bal').innerText = s.val().balance || "0.00";
-            });
+            document.getElementById('userPhoneDisplay').innerText = userPhone;
+            loadData();
         } else { window.location.href = "index.html"; }
     });
 
-    function handleAdClick() {
-        if (isWatching) return; // Agar pehle se timer chal raha hai toh kuch mat karo
-
-        const randomAd = adLinks[Math.floor(Math.random() * adLinks.length)];
-        window.open(randomAd, '_blank');
-        
-        isWatching = true;
-        const btn = document.getElementById("taskBtn");
-        btn.innerText = "Processing Reward... (Wait 20s)";
-        btn.style.background = "#ccc";
-        btn.style.cursor = "not-allowed";
-
-        // 20 seconds baad hi balance badhega
-        setTimeout(() => {
-            db.ref('users/' + userPhone).transaction((u) => {
-                if(u) {
-                    u.balance = (parseFloat(u.balance || 0) + 0.10).toFixed(2);
-                }
-                return u;
-            });
-
-            // Button ko wapas normal karo
-            isWatching = false;
-            btn.innerText = "📺 Watch Video & Earn ₹0.10";
-            btn.style.background = "#1a73e8";
-            btn.style.cursor = "pointer";
-            
-            alert("Success! ₹0.10 credited to your wallet.");
-        }, 20000); // 20000ms = 20 seconds
+    function loadData() {
+        db.ref('users/' + userPhone).on('value', (s) => {
+            if(s.val()) document.getElementById('bal').innerText = s.val().balance || "0.00";
+        });
+        db.ref('transactions/' + userPhone).on('value', (s) => {
+            const list = document.getElementById('historyList');
+            list.innerHTML = "";
+            if(s.val()) {
+                Object.values(s.val()).reverse().forEach(t => {
+                    list.innerHTML += `<div class="history-item"><b>+₹${t.amount}</b> - ${t.time}</div>`;
+                });
+            }
+        });
     }
 
-    function submitWithdrawal() {
-        const upi = document.getElementById('upi_id').value;
+    function showTab(tabId, title) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        document.getElementById('headerTitle').innerText = title;
+    }
+
+    function watchAd() {
+        window.open(adLinks[Math.floor(Math.random() * adLinks.length)], '_blank');
+        const btn = document.getElementById('taskBtn');
+        btn.disabled = true;
+        btn.innerText = "Validating... (Wait 20s)";
+        
+        setTimeout(() => {
+            db.ref('users/' + userPhone).transaction((u) => {
+                if(u) u.balance = (parseFloat(u.balance || 0) + 0.10).toFixed(2);
+                return u;
+            });
+            db.ref('transactions/' + userPhone).push({ amount: 0.10, time: new Date().toLocaleTimeString() });
+            btn.disabled = false;
+            btn.innerText = "Watch Ad & Earn ₹0.10";
+            alert("₹0.10 Added!");
+        }, 20000);
+    }
+
+    function withdraw() {
+        const upiVal = document.getElementById('upi').value;
         const bal = parseFloat(document.getElementById('bal').innerText);
-
-        if(upi.length < 5) return alert("Sahi UPI ID dalein!");
-        if(bal < 100) return alert("Minimum ₹100 chahiye!");
-
-        db.ref('withdrawals').push({
-            phone: userPhone,
-            upi: upi,
-            amount: bal,
-            status: "Pending",
-            date: new Date().toLocaleString()
-        }).then(() => alert("Request Bheji Gayi!"));
+        if(bal < 100) return alert("Minimum ₹100 required!");
+        if(upiVal.length < 5) return alert("Invalid UPI!");
+        db.ref('withdrawals').push({ phone: userPhone, upi: upiVal, amount: bal, date: new Date().toLocaleString() })
+        .then(() => alert("Request Sent!"));
     }
 </script>
 </body>
