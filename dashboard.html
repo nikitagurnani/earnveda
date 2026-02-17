@@ -4,158 +4,90 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="monetag" content="c72238220f80276f68c30169d6d8561e">
-    <title>EarnVeda Dashboard</title>
+    <title>EarnVeda Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding-bottom: 70px; }
-        .app-bar { background: #1a73e8; color: white; padding: 20px; font-size: 22px; font-weight: bold; }
+        body { font-family: sans-serif; background: #f4f7f6; margin: 0; padding-bottom: 70px; text-align: center; }
+        .header { background: #1a73e8; color: white; padding: 20px; font-size: 20px; font-weight: bold; }
         .tab-content { display: none; padding: 20px; }
         .active { display: block; }
-        .card { background: white; margin-bottom: 20px; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .balance { font-size: 48px; color: #28a745; font-weight: bold; margin: 10px 0; }
-        .btn-task { background: #1a73e8; color: white; border: none; padding: 18px; border-radius: 12px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; }
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #ddd; }
-        .nav-item { cursor: pointer; color: #555; font-size: 14px; text-align: center; }
-        .nav-item.active-nav { color: #1a73e8; font-weight: bold; }
-        input { width: 100%; padding: 15px; margin: 15px 0; border: 1px solid #ccc; border-radius: 12px; box-sizing: border-box; }
-        .withdraw-info { background: #e8f0fe; padding: 10px; border-radius: 10px; margin-bottom: 10px; font-size: 14px; color: #1a73e8; }
+        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .balance { font-size: 40px; color: #28a745; font-weight: bold; }
+        .btn { background: #1a73e8; color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-size: 16px; cursor: pointer; font-weight: bold; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; }
+        .nav-item { cursor: pointer; color: #555; font-size: 14px; }
+        .history-item { text-align: left; border-bottom: 1px solid #eee; padding: 10px; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<div class="app-bar" id="pageTitle">Home</div>
+<div class="header" id="title">Home</div>
 
-<div id="homeTab" class="tab-content active">
-    <div class="card">
-        <p>Available Balance</p>
-        <div class="balance">₹<span id="bal">0.00</span></div>
-    </div>
-    <div class="card">
-        <h3>Daily Earning Task</h3>
-        <button class="btn-task" id="taskBtn" onclick="handleAdClick()">📺 Watch Ad & Earn ₹0.10</button>
-    </div>
+<div id="home" class="tab-content active">
+    <div class="card"><p>Wallet Balance</p><div class="balance">₹<span id="bal">0.00</span></div></div>
+    <div class="card"><h3>Daily Task</h3><button class="btn" id="taskBtn" onclick="doTask()">Watch Ad & Earn ₹0.10</button></div>
 </div>
 
-<div id="transTab" class="tab-content">
-    <div class="card">
-        <h3>Transaction History</h3>
-        <div id="historyList">No history found.</div>
-    </div>
+<div id="history" class="tab-content">
+    <div class="card"><h3>Transactions</h3><div id="hList">No data yet.</div></div>
 </div>
 
-<div id="profileTab" class="tab-content">
-    <div class="card">
-        <h3>Withdrawal</h3>
-        <div class="withdraw-info">Min. withdrawal is ₹100. Pura balance ek saath withdraw hoga.</div>
-        <input type="text" id="upi_id" placeholder="Enter UPI ID (e.g. name@upi)">
-        <button class="btn-task" style="background:#000" onclick="submitWithdrawal()">Withdraw Entire Balance</button>
-    </div>
-    <button class="btn-task" style="background:#dc3545; margin-top: 20px;" onclick="firebase.auth().signOut()">Logout</button>
+<div id="profile" class="tab-content">
+    <div class="card"><h3>Withdrawal</h3><input type="text" id="upi" placeholder="Your UPI ID" style="width:90%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc;"><br>
+    <button class="btn" style="background:black" onclick="requestWithdraw()">Withdraw Entire Balance</button></div>
+    <button class="btn" style="background:red; width:80%;" onclick="firebase.auth().signOut()">Logout</button>
 </div>
 
 <div class="nav-bar">
-    <div class="nav-item active-nav" onclick="switchTab('homeTab', 'Home', this)">🏠<br>Home</div>
-    <div class="nav-item" onclick="switchTab('transTab', 'History', this)">📊<br>History</div>
-    <div class="nav-item" onclick="switchTab('profileTab', 'Profile', this)">👤<br>Profile</div>
+    <div onclick="showTab('home', 'Home')">🏠<br>Home</div>
+    <div onclick="showTab('history', 'History')">📊<br>History</div>
+    <div onclick="showTab('profile', 'Profile')">👤<br>Profile</div>
 </div>
 
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
-        authDomain: "earnify-official.firebaseapp.com",
-        databaseURL: "https://earnify-official-default-rtdb.firebaseio.com",
-        projectId: "earnify-official",
-        storageBucket: "earnify-official.firebasestorage.app",
-        messagingSenderId: "392652401236",
-        appId: "1:392652401236:web:00bd6e145cb6ac1f6c9bc1"
-    };
+    const firebaseConfig = { apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI", authDomain: "earnify-official.firebaseapp.com", databaseURL: "https://earnify-official-default-rtdb.firebaseio.com", projectId: "earnify-official", storageBucket: "earnify-official.firebasestorage.app", messagingSenderId: "392652401236", appId: "1:392652401236:web:00bd6e145cb6ac1f6c9bc1" };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const auth = firebase.auth();
-
+    const db = firebase.database(), auth = firebase.auth();
     let userPhone = "";
-    let isWatching = false;
-    const adLinks = [
-        "https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311",
-        "https://omg10.com/4/10581177"
-    ];
 
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            userPhone = user.email.split('@')[0];
-            syncData();
-        } else { window.location.href = "index.html"; }
+    auth.onAuthStateChanged(user => {
+        if (user) { userPhone = user.email.split('@')[0]; sync(); } 
+        else { window.location.href = "index.html"; }
     });
 
-    function syncData() {
-        // Balance Sync
-        db.ref('users/' + userPhone).on('value', (s) => {
-            if(s.val()) document.getElementById('bal').innerText = s.val().balance || "0.00";
-        });
-        // History Sync
-        db.ref('transactions/' + userPhone).on('value', (s) => {
-            const list = document.getElementById('historyList');
-            list.innerHTML = "";
-            if(s.val()) {
-                Object.values(s.val()).reverse().forEach(t => {
-                    list.innerHTML += `<div style="text-align:left; border-bottom:1px solid #eee; padding:10px;"><b>+₹${t.amount}</b> - ${t.time}</div>`;
-                });
-            }
+    function sync() {
+        db.ref('users/' + userPhone).on('value', s => { if(s.val()) document.getElementById('bal').innerText = s.val().balance || "0.00"; });
+        db.ref('transactions/' + userPhone).on('value', s => {
+            const l = document.getElementById('hList'); l.innerHTML = "";
+            if(s.val()) Object.values(s.val()).reverse().forEach(t => { l.innerHTML += `<div class="history-item"><b>+₹${t.amount}</b> - ${t.time}</div>`; });
         });
     }
 
-    function switchTab(tabId, title, el) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
-        document.getElementById(tabId).classList.add('active');
-        document.getElementById('pageTitle').innerText = title;
-        el.classList.add('active-nav');
+    function showTab(id, t) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.getElementById('title').innerText = t;
     }
 
-    function handleAdClick() {
-        if (isWatching) return;
-        window.open(adLinks[Math.floor(Math.random() * adLinks.length)], '_blank');
-        
-        isWatching = true;
-        const btn = document.getElementById("taskBtn");
-        btn.innerText = "Processing Reward... (20s)";
-        btn.style.background = "#ccc";
-
+    function doTask() {
+        window.open("https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311", '_blank');
+        const b = document.getElementById('taskBtn'); b.disabled = true; b.innerText = "Processing... (20s)";
         setTimeout(() => {
-            db.ref('users/' + userPhone).transaction((u) => {
-                if(u) u.balance = (parseFloat(u.balance || 0) + 0.10).toFixed(2);
-                return u;
-            });
+            db.ref('users/' + userPhone).transaction(u => { if(u) u.balance = (parseFloat(u.balance || 0) + 0.10).toFixed(2); return u; });
             db.ref('transactions/' + userPhone).push({ amount: 0.10, time: new Date().toLocaleTimeString() });
-            
-            isWatching = false;
-            btn.innerText = "📺 Watch Ad & Earn ₹0.10";
-            btn.style.background = "#1a73e8";
-            alert("Success! ₹0.10 added.");
+            b.disabled = false; b.innerText = "Watch Ad & Earn ₹0.10";
+            alert("Reward Added!");
         }, 20000);
     }
 
-    function submitWithdrawal() {
-        const upi = document.getElementById('upi_id').value;
-        const currentBal = parseFloat(document.getElementById('bal').innerText);
-
-        if(upi.length < 5) return alert("Please enter a valid UPI ID!");
-        if(currentBal < 100) return alert("Minimum ₹100 required to withdraw!");
-
-        // Pura balance withdraw karne ka logic
-        db.ref('withdrawals').push({
-            phone: userPhone,
-            upi: upi,
-            amount: currentBal,
-            status: "Pending",
-            date: new Date().toLocaleString()
-        }).then(() => {
-            // Withdraw ke baad balance 0 kar do
-            db.ref('users/' + userPhone + '/balance').set("0.00");
-            alert("Withdrawal request of ₹" + currentBal + " sent successfully!");
-        });
+    function requestWithdraw() {
+        const u = document.getElementById('upi').value, b = parseFloat(document.getElementById('bal').innerText);
+        if(b < 100) return alert("Minimum ₹100 required!");
+        if(u.length < 5) return alert("Enter valid UPI!");
+        db.ref('withdrawals').push({ phone: userPhone, upi: u, amount: b, date: new Date().toLocaleString() })
+        .then(() => { db.ref('users/' + userPhone + '/balance').set("0.00"); alert("Withdraw Request Sent!"); });
     }
 </script>
 </body>
