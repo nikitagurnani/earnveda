@@ -13,7 +13,7 @@
         .app-bar { background: #1a73e8; color: white; padding: 20px; font-size: 22px; font-weight: bold; }
         .card { background: white; margin: 20px; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         .balance { font-size: 48px; color: #28a745; font-weight: bold; margin: 10px 0; }
-        .btn-task { background: #1a73e8; color: white; border: none; padding: 18px; border-radius: 12px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .btn-task { background: #1a73e8; color: white; border: none; padding: 18px; border-radius: 12px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .withdraw-section { background: #fff; margin: 20px; padding: 20px; border-radius: 20px; border: 1px solid #ddd; }
         input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ccc; border-radius: 10px; box-sizing: border-box; }
         .btn-withdraw { background: #000; color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; }
@@ -26,7 +26,7 @@
 <div class="card">
     <p>Available Balance</p>
     <div class="balance">₹<span id="bal">0.00</span></div>
-    <button class="btn-task" onclick="handleAdClick()">📺 Watch Video & Earn ₹0.10</button>
+    <button class="btn-task" id="taskBtn" onclick="handleAdClick()">📺 Watch Video & Earn ₹0.10</button>
 </div>
 
 <div class="withdraw-section">
@@ -50,9 +50,10 @@
     const auth = firebase.auth();
 
     let userPhone = "";
+    let isWatching = false; // Isse double click rukega
     const adLinks = [
-        "https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311", // Adsterra
-        "https://omg10.com/4/10581177" // Monetag
+        "https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311",
+        "https://omg10.com/4/10581177"
     ];
 
     auth.onAuthStateChanged((user) => {
@@ -65,17 +66,34 @@
     });
 
     function handleAdClick() {
+        if (isWatching) return; // Agar pehle se timer chal raha hai toh kuch mat karo
+
         const randomAd = adLinks[Math.floor(Math.random() * adLinks.length)];
         window.open(randomAd, '_blank');
         
-        // Add balance after 5 seconds delay to mimic watch time
+        isWatching = true;
+        const btn = document.getElementById("taskBtn");
+        btn.innerText = "Processing Reward... (Wait 20s)";
+        btn.style.background = "#ccc";
+        btn.style.cursor = "not-allowed";
+
+        // 20 seconds baad hi balance badhega
         setTimeout(() => {
             db.ref('users/' + userPhone).transaction((u) => {
-                if(u) u.balance = (parseFloat(u.balance || 0) + 0.10).toFixed(2);
+                if(u) {
+                    u.balance = (parseFloat(u.balance || 0) + 0.10).toFixed(2);
+                }
                 return u;
             });
-            alert("Reward Added! ₹0.10 credited.");
-        }, 5000);
+
+            // Button ko wapas normal karo
+            isWatching = false;
+            btn.innerText = "📺 Watch Video & Earn ₹0.10";
+            btn.style.background = "#1a73e8";
+            btn.style.cursor = "pointer";
+            
+            alert("Success! ₹0.10 credited to your wallet.");
+        }, 20000); // 20000ms = 20 seconds
     }
 
     function submitWithdrawal() {
@@ -83,12 +101,7 @@
         const bal = parseFloat(document.getElementById('bal').innerText);
 
         if(upi.length < 5) return alert("Sahi UPI ID dalein!");
-        
-        // ₹100 Threshold Check
-        if(bal < 100) {
-            alert("Minimum ₹100 chahiye withdraw ke liye! Abhi aur mehnat karo.");
-            return;
-        }
+        if(bal < 100) return alert("Minimum ₹100 chahiye!");
 
         db.ref('withdrawals').push({
             phone: userPhone,
@@ -96,7 +109,7 @@
             amount: bal,
             status: "Pending",
             date: new Date().toLocaleString()
-        }).then(() => alert("Request Bheji Gayi! 24 ghante mein payment mil jayega."));
+        }).then(() => alert("Request Bheji Gayi!"));
     }
 </script>
 </body>
