@@ -3,32 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EarnVeda - User Dashboard</title>
+    <meta name="monetag" content="c72238220f80276f68c30169d6d8561e">
+    <title>EarnVeda Dashboard</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 0; }
-        .header { background: #1a73e8; color: white; padding: 25px; text-align: center; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
-        .card { background: white; margin: 20px auto; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; text-align: center; }
-        .balance { font-size: 36px; font-weight: bold; color: #28a745; margin: 10px 0; }
-        .btn { background: #1a73e8; color: white; border: none; padding: 12px 20px; border-radius: 8px; width: 100%; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
-        .btn-withdraw { background: #202124; margin-top: 15px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; text-align: center; }
+        .app-bar { background: #1a73e8; color: white; padding: 20px; font-size: 22px; font-weight: bold; }
+        .card { background: white; margin: 20px; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .balance { font-size: 48px; color: #28a745; font-weight: bold; margin: 10px 0; }
+        .btn-task { background: #1a73e8; color: white; border: none; padding: 18px; border-radius: 12px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .withdraw-section { background: #fff; margin: 20px; padding: 20px; border-radius: 20px; border: 1px solid #ddd; }
+        input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ccc; border-radius: 10px; box-sizing: border-box; }
+        .btn-withdraw { background: #000; color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="header"><h3>EarnVeda Wallet</h3></div>
-    <div class="card">
-        <p>Current Balance</p>
-        <div class="balance">₹<span id="bal">0.00</span></div>
-        <button class="btn" onclick="watchAd()">📺 Watch Ad (+₹0.10)</button>
-    </div>
-    <div class="card">
-        <h4>Withdrawal</h4>
-        <input type="text" id="pay_id" placeholder="Paytm No / UPI ID">
-        <button class="btn btn-withdraw" onclick="withdraw()">Withdraw Now</button>
-    </div>
+
+<div class="app-bar">EarnVeda Dashboard</div>
+
+<div class="card">
+    <p>Available Balance</p>
+    <div class="balance">₹<span id="bal">0.00</span></div>
+    <button class="btn-task" onclick="handleAdClick()">📺 Watch Video & Earn ₹0.10</button>
+</div>
+
+<div class="withdraw-section">
+    <h3>Withdraw (Min ₹100)</h3>
+    <input type="text" id="upi_id" placeholder="Enter UPI ID or Paytm Number">
+    <button class="btn-withdraw" onclick="submitWithdrawal()">Withdraw Now</button>
+</div>
+
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
@@ -44,30 +50,53 @@
     const auth = firebase.auth();
 
     let userPhone = "";
+    const adLinks = [
+        "https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311", // Adsterra
+        "https://omg10.com/4/10581177" // Monetag
+    ];
+
     auth.onAuthStateChanged((user) => {
         if (user) {
             userPhone = user.email.split('@')[0];
             db.ref('users/' + userPhone).on('value', (s) => {
-                document.getElementById('bal').innerText = s.val().balance || "0.00";
+                if(s.val()) document.getElementById('bal').innerText = s.val().balance || "0.00";
             });
         } else { window.location.href = "index.html"; }
     });
 
-    function watchAd() {
-        alert("Ad playing... Done!");
-        db.ref('users/' + userPhone).transaction((u) => {
-            if(u) u.balance = (parseFloat(u.balance || 0) + 0.10).toFixed(2);
-            return u;
-        });
+    function handleAdClick() {
+        const randomAd = adLinks[Math.floor(Math.random() * adLinks.length)];
+        window.open(randomAd, '_blank');
+        
+        // Add balance after 5 seconds delay to mimic watch time
+        setTimeout(() => {
+            db.ref('users/' + userPhone).transaction((u) => {
+                if(u) u.balance = (parseFloat(u.balance || 0) + 0.10).toFixed(2);
+                return u;
+            });
+            alert("Reward Added! ₹0.10 credited.");
+        }, 5000);
     }
 
-    function withdraw() {
-        const id = document.getElementById('pay_id').value;
-        const bal = document.getElementById('bal').innerText;
-        if(id.length < 5) return alert("Sahi ID dalein!");
-        if(parseFloat(bal) < 1.0) return alert("Minimum ₹1.0 chahiye!");
-        db.ref('withdrawals').push({ phone: userPhone, pay_id: id, amount: bal, status: "Pending" })
-          .then(() => alert("Request Bheji Gayi!"));
+    function submitWithdrawal() {
+        const upi = document.getElementById('upi_id').value;
+        const bal = parseFloat(document.getElementById('bal').innerText);
+
+        if(upi.length < 5) return alert("Sahi UPI ID dalein!");
+        
+        // ₹100 Threshold Check
+        if(bal < 100) {
+            alert("Minimum ₹100 chahiye withdraw ke liye! Abhi aur mehnat karo.");
+            return;
+        }
+
+        db.ref('withdrawals').push({
+            phone: userPhone,
+            upi: upi,
+            amount: bal,
+            status: "Pending",
+            date: new Date().toLocaleString()
+        }).then(() => alert("Request Bheji Gayi! 24 ghante mein payment mil jayega."));
     }
 </script>
 </body>
