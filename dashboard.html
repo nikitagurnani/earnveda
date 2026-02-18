@@ -22,8 +22,11 @@
         .nav-item { cursor: pointer; color: #555; font-size: 14px; text-align: center; flex: 1; }
         .nav-item.active-nav { color: #1a73e8; font-weight: bold; }
         input { width: 100%; padding: 15px; margin: 15px 0; border: 1px solid #ccc; border-radius: 12px; box-sizing: border-box; }
-        .history-item { text-align: left; border-bottom: 1px solid #eee; padding: 12px; font-size: 14px; display: flex; justify-content: space-between; }
-        .status-pending { color: orange; font-weight: bold; }
+        /* History design update */
+        .history-item { text-align: left; border-bottom: 1px solid #eee; padding: 12px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+        .history-details { display: flex; flex-direction: column; }
+        .history-date { font-size: 11px; color: #888; margin-top: 4px; }
+        .status-success { color: #28a745; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -66,7 +69,6 @@
 </div>
 
 <script>
-    // Your verified Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
         authDomain: "earnify-official.firebaseapp.com",
@@ -93,19 +95,25 @@
     });
 
     function loadData() {
-        // Real-time Balance Update
         db.ref('users/' + userPhone).on('value', (snapshot) => {
             const data = snapshot.val();
             document.getElementById('bal').innerText = data ? (data.balance || "0.00") : "0.00";
         });
 
-        // Real-time History Update
         db.ref('transactions/' + userPhone).on('value', (snapshot) => {
             const list = document.getElementById('historyList');
             list.innerHTML = "";
             if(snapshot.val()) {
                 Object.values(snapshot.val()).reverse().forEach(t => {
-                    list.innerHTML += `<div class="history-item"><span>Earned Reward</span><b>+₹${t.amount}</b></div>`;
+                    // Yahan date aur time dikhane ka naya design
+                    list.innerHTML += `
+                    <div class="history-item">
+                        <div class="history-details">
+                            <span style="font-weight:bold;">Ad Reward</span>
+                            <span class="history-date">${t.timestamp || ''}</span>
+                        </div>
+                        <b class="status-success">+₹${t.amount}</b>
+                    </div>`;
                 });
             } else { list.innerHTML = "No history found."; }
         });
@@ -129,6 +137,11 @@
         btn.innerText = "Verifying Ad... (20s)";
 
         setTimeout(() => {
+            // Naya time format (e.g., 18 Feb, 08:50 PM)
+            const now = new Date();
+            const timeOptions = { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' };
+            const formattedTime = now.toLocaleString('en-IN', timeOptions);
+
             db.ref('users/' + userPhone).transaction((currentData) => {
                 if (currentData === null) return { balance: "0.15" };
                 let currentBal = parseFloat(currentData.balance || 0);
@@ -138,7 +151,7 @@
 
             db.ref('transactions/' + userPhone).push({
                 amount: "0.15",
-                time: new Date().toLocaleString()
+                timestamp: formattedTime
             });
 
             isProcessing = false;
@@ -155,12 +168,15 @@
         if(upi.length < 5) return alert("Please enter a valid UPI ID!");
         if(bal < 100) return alert("Minimum balance of ₹100 required!");
 
+        const now = new Date();
+        const formattedTime = now.toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
         db.ref('withdrawals').push({
             user: userPhone,
             upi: upi,
             amount: bal,
             status: "Pending",
-            timestamp: new Date().toLocaleString()
+            timestamp: formattedTime
         }).then(() => {
             db.ref('users/' + userPhone + '/balance').set("0.00");
             alert("Withdrawal request of ₹" + bal + " sent successfully!");
