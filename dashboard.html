@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="monetag" content="c72238220f80276f68c30169d6d8561e">
     <title>EarnVeda Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -13,166 +12,53 @@
         .tab-content { display: none; padding: 20px; }
         .active { display: block; }
         .card { background: white; margin-bottom: 20px; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .balance-title { color: #666; font-size: 16px; margin: 0; }
-        .balance-amount { font-size: 48px; color: #28a745; font-weight: bold; margin: 10px 0; }
-        .btn-main { background: #1a73e8; color: white; border: none; padding: 18px; border-radius: 12px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-bottom: 10px; }
-        .btn-main:disabled { background: #ccc; cursor: not-allowed; }
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #ddd; }
-        .nav-item { cursor: pointer; color: #555; font-size: 14px; text-align: center; flex: 1; }
-        .nav-item.active-nav { color: #1a73e8; font-weight: bold; }
-        input { width: 100%; padding: 15px; margin: 15px 0; border: 1px solid #ccc; border-radius: 12px; box-sizing: border-box; }
-        .history-item { text-align: left; border-bottom: 1px solid #eee; padding: 12px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
-        .status-success { color: #28a745; font-weight: bold; }
+        .balance-amount { font-size: 48px; color: #28a745; font-weight: bold; }
+        .btn-main { background: #1a73e8; color: white; border: none; padding: 18px; border-radius: 12px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #ddd; }
+        .nav-item { cursor: pointer; padding: 12px 0; flex: 1; }
     </style>
 </head>
 <body>
-
-<div class="header" id="pageTitle">EarnVeda</div>
-
-<div id="homeTab" class="tab-content active">
-    <div class="card">
-        <p class="balance-title">Available Balance</p>
-        <div class="balance-amount">₹<span id="bal">0.00</span></div>
+    <div class="header" id="pageTitle">EarnVeda</div>
+    <div id="homeTab" class="tab-content active">
+        <div class="card"><p>Balance</p><div class="balance-amount">₹<span id="bal">0.00</span></div></div>
+        <div class="card"><button class="btn-main" id="taskBtn" onclick="handleAd()">📺 Watch Ad</button></div>
     </div>
-    <div class="card">
-        <h3>Daily Earning Task</h3>
-        <button class="btn-main" id="taskBtn" onclick="handleAd()">📺 Watch Ad & Earn ₹0.15</button>
+    <div id="transTab" class="tab-content"><div class="card"><h3>History</h3><div id="historyList"></div></div></div>
+    <div id="profileTab" class="tab-content"><div class="card"><h3>Profile</h3><button onclick="logout()">Logout</button></div></div>
+    <div class="nav-bar">
+        <div class="nav-item" onclick="switchTab('homeTab', 'EarnVeda')">🏠 Home</div>
+        <div class="nav-item" onclick="switchTab('transTab', 'History')">📊 History</div>
+        <div class="nav-item" onclick="switchTab('profileTab', 'Profile')">👤 Profile</div>
     </div>
-</div>
 
-<div id="transTab" class="tab-content">
-    <div class="card">
-        <h3>Transaction History</h3>
-        <div id="historyList">No transactions yet.</div>
-    </div>
-</div>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
+            authDomain: "earnify-official.firebaseapp.com",
+            databaseURL: "https://earnify-official-default-rtdb.firebaseio.com",
+            projectId: "earnify-official",
+            storageBucket: "earnify-official.firebasestorage.app",
+            messagingSenderId: "392652401236",
+            appId: "1:392652401236:web:00bd6e145cb6ac1f6c9bc1"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let userPhone = localStorage.getItem('userPhone');
+        if (!userPhone) window.location.href = "index.html";
 
-<div id="profileTab" class="tab-content">
-    <div class="card">
-        <h3>Withdrawal</h3>
-        <input type="text" id="upi_id" placeholder="Enter UPI ID">
-        <button class="btn-main" style="background: #333;" onclick="requestWithdrawal()">Withdraw Full Balance</button>
-    </div>
-    <button class="btn-main" style="background: #dc3545;" onclick="logout()">Logout</button>
-</div>
-
-<div class="nav-bar">
-    <div class="nav-item active-nav" onclick="switchTab('homeTab', 'EarnVeda', this)">🏠<br>Home</div>
-    <div class="nav-item" onclick="switchTab('transTab', 'History', this)">📊<br>History</div>
-    <div class="nav-item" onclick="switchTab('profileTab', 'Profile', this)">👤<br>Profile</div>
-</div>
-
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
-        authDomain: "earnify-official.firebaseapp.com",
-        databaseURL: "https://earnify-official-default-rtdb.firebaseio.com",
-        projectId: "earnify-official",
-        storageBucket: "earnify-official.firebasestorage.app",
-        messagingSenderId: "392652401236",
-        appId: "1:392652401236:web:00bd6e145cb6ac1f6c9bc1"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    
-    let userPhone = localStorage.getItem('userPhone');
-    let isProcessing = false;
-    const ads = ["https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311", "https://omg10.com/4/10581177"];
-
-    if (!userPhone) {
-        window.location.href = "index.html";
-    } else {
-        loadData();
-        checkAdmin();
-        checkNameUpdate();
-    }
-
-    function loadData() {
-        db.ref('users/' + userPhone).on('value', (snapshot) => {
-            const data = snapshot.val();
-            document.getElementById('bal').innerText = data ? (data.balance || "0.00") : "0.00";
-        });
-
-        db.ref('transactions/' + userPhone).on('value', (snapshot) => {
-            const list = document.getElementById('historyList');
-            list.innerHTML = "";
-            if(snapshot.val()) {
-                Object.values(snapshot.val()).reverse().forEach(t => {
-                    list.innerHTML += `<div class="history-item"><div><b>Ad Reward</b><br><small>${t.timestamp}</small></div><b class="status-success">+₹${t.amount}</b></div>`;
-                });
-            } else { list.innerHTML = "No history found."; }
-        });
-    }
-
-    function checkNameUpdate() {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('updateName')) {
-            setTimeout(() => {
-                let name = prompt("Welcome! Please enter your Full Name:");
-                if (name) {
-                    db.ref('users/' + userPhone).update({ fullName: name });
-                }
-            }, 1000);
-        }
-    }
-
-    function checkAdmin() {
-        if (userPhone === "7067007802") {
-            const profileTab = document.getElementById('profileTab');
-            const adminBtn = document.createElement('button');
-            adminBtn.className = "btn-main";
-            adminBtn.style.background = "#FFD700";
-            adminBtn.style.color = "#000";
-            adminBtn.innerHTML = "⭐ Open Admin Panel";
-            adminBtn.onclick = () => { window.location.href = 'admin.html'; };
-            profileTab.insertBefore(adminBtn, profileTab.firstChild);
-        }
-    }
-
-    function switchTab(id, title, el) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
-        document.getElementById(id).classList.add('active');
-        document.getElementById('pageTitle').innerText = title;
-        el.classList.add('active-nav');
-    }
-
-    function handleAd() {
-        if (isProcessing) return;
-        window.open(ads[Math.floor(Math.random() * ads.length)], '_blank');
-        isProcessing = true;
-        const btn = document.getElementById('taskBtn');
-        btn.disabled = true;
-        btn.innerText = "Verifying... (20s)";
-
-        setTimeout(() => {
-            const now = new Date();
-            const time = now.toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-            db.ref('users/' + userPhone).transaction((c) => {
-                if (!c) return { balance: 0.15, adsWatched: 1 };
-                c.balance = (parseFloat(c.balance || 0) + 0.15).toFixed(2);
-                c.adsWatched = (parseInt(c.adsWatched || 0) + 1);
-                return c;
+        function loadData() {
+            db.ref('users/' + userPhone).on('value', (s) => {
+                document.getElementById('bal').innerText = s.val() ? (s.val().balance || "0.00") : "0.00";
             });
-            db.ref('transactions/' + userPhone).push({ amount: "0.15", timestamp: time });
-            isProcessing = false;
-            btn.disabled = false;
-            btn.innerText = "📺 Watch Ad & Earn ₹0.15";
-            alert("Success! ₹0.15 added.");
-        }, 20000);
-    }
-
-    function requestWithdrawal() {
-        const upi = document.getElementById('upi_id').value;
-        const bal = parseFloat(document.getElementById('bal').innerText);
-        if(upi.length < 5 || bal < 100) return alert("Min. ₹100 required!");
-        db.ref('withdrawals').push({ user: userPhone, upi: upi, amount: bal, status: "Pending", timestamp: new Date().toLocaleString() });
-        db.ref('users/' + userPhone + '/balance').set("0.00");
-        alert("Withdrawal request sent!");
-    }
-
-    function logout() { localStorage.clear(); window.location.href = "index.html"; }
-</script>
+        }
+        function switchTab(id, t) {
+            document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.getElementById('pageTitle').innerText = t;
+        }
+        function logout() { localStorage.clear(); window.location.href = "index.html"; }
+        loadData();
+    </script>
 </body>
 </html>
