@@ -3,30 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EarnVeda - Login</title>
+    
+    <meta name="monetag" content="c72238220f80276f68c30169d6d8561e">
+
+    <title>EarnVeda - Secure Login</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 320px; text-align: center; }
-        h2 { color: #1a73e8; margin-bottom: 25px; }
-        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
-        .btn-login { background: #1a73e8; color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .footer-text { margin-top: 20px; font-size: 12px; color: #777; }
+        /* Sundar Background Gradient */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #1a73e8 0%, #00d2ff 100%); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px;
+        }
+
+        .login-card { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 25px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2); 
+            width: 100%; 
+            max-width: 360px; 
+            text-align: center; 
+        }
+
+        h2 { color: #1a73e8; margin-bottom: 15px; font-size: 28px; }
+
+        .warning-box { 
+            background: #fff4e5; 
+            color: #b36b00; 
+            padding: 12px; 
+            border-radius: 12px; 
+            font-size: 12px; 
+            margin-bottom: 20px; 
+            text-align: left; 
+            border-left: 5px solid #ff9800;
+            line-height: 1.5;
+        }
+
+        input { 
+            width: 100%; 
+            padding: 14px; 
+            margin-bottom: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 12px; 
+            box-sizing: border-box; 
+            font-size: 16px;
+            outline: none;
+        }
+
+        input:focus { border-color: #1a73e8; box-shadow: 0 0 5px rgba(26,115,232,0.3); }
+
+        .pass-rules {
+            font-size: 11px;
+            color: #d93025;
+            text-align: left;
+            margin-top: -8px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .show-pass { 
+            text-align: left; 
+            font-size: 14px; 
+            margin-bottom: 20px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            cursor: pointer; 
+            color: #555;
+        }
+
+        .btn-login { 
+            background: #1a73e8; 
+            color: white; 
+            border: none; 
+            padding: 16px; 
+            border-radius: 12px; 
+            width: 100%; 
+            font-size: 18px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: 0.3s ease;
+        }
+
+        .btn-login:hover { background: #1557b0; transform: translateY(-2px); }
+        .btn-login:disabled { background: #ccc; cursor: not-allowed; }
+
+        .footer-note { font-size: 11px; color: #888; margin-top: 15px; }
     </style>
 </head>
 <body>
 
     <div class="login-card">
-        <h2>EarnVeda Login</h2>
-        <input type="number" id="phone" placeholder="Phone Number">
-        <input type="password" id="password" placeholder="Password">
+        <h2>EarnVeda</h2>
+        
+        <div class="warning-box">
+            ⚠️ <b>Zaroori Suchna:</b><br>
+            - Password ka <b>Screenshot</b> le lein.<br>
+            - Bhoolne par account reset nahi hoga.<br>
+            - Dusra account banana padega.
+        </div>
+
+        <input type="number" id="phone" placeholder="Mobile Number">
+        
+        <input type="password" id="password" placeholder="Strong Password">
+        <span class="pass-rules">Rules: 6+ Letters, ABC, abc, 123, @#$</span>
+
+        <label class="show-pass">
+            <input type="checkbox" onclick="togglePass()" style="width: auto; margin: 0;"> Show Password
+        </label>
+
         <button class="btn-login" id="loginBtn" onclick="handleLogin()">Login / Register</button>
-        <p class="footer-text">Naya number hai toh apne aap Register ho jayega.</p>
+        
+        <p class="footer-note">Strong password hi account ko secure rakhta hai.</p>
     </div>
 
     <script>
-        // FIREBASE CONFIG (Wahi jo dashboard mein hai)
         const firebaseConfig = {
             apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
             authDomain: "earnify-official.firebaseapp.com",
@@ -39,43 +138,67 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        function togglePass() {
+            const p = document.getElementById("password");
+            p.type = p.type === "password" ? "text" : "password";
+        }
+
+        // Strong Password Check Function
+        function validatePassword(p) {
+            // Kam se kam 6 char, 1 Upper, 1 Lower, 1 Number, 1 Special
+            const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{6,}$/;
+            return regex.test(p);
+        }
+
         function handleLogin() {
             const phone = document.getElementById('phone').value.trim();
             const pass = document.getElementById('password').value.trim();
             const btn = document.getElementById('loginBtn');
 
-            if (phone.length < 10 || pass === "") {
-                alert("Sahi Number aur Password dalein!");
+            if (phone.length < 10) {
+                alert("Kripya sahi 10-digit number dalein!");
                 return;
             }
 
-            btn.innerText = "Checking...";
+            if (!validatePassword(pass)) {
+                alert("Password Rules follow karein: Minimum 6 characters, Capital Letter, Small Letter, Number, aur Symbol (@#$) hona chahiye.");
+                return;
+            }
+
+            btn.innerText = "Processing...";
             btn.disabled = true;
 
             const userRef = db.ref('users/' + phone);
 
             userRef.once('value').then((snapshot) => {
                 if (snapshot.exists()) {
-                    // Agar user pehle se hai, toh password match karo
-                    if (snapshot.val().password === pass) {
+                    // Login check
+                    if (snapshot.val().password.toString() === pass) {
                         localStorage.setItem('userPhone', phone);
                         window.location.href = "dashboard.html";
                     } else {
-                        alert("Galat Password!");
+                        alert("Galat Password! Agar aap bhool gaye hain toh naya account banana hoga.");
                         btn.innerText = "Login / Register";
                         btn.disabled = false;
                     }
                 } else {
-                    // Agar naya user hai (Jaise 8827...), toh uska account banao
-                    userRef.set({
-                        phone: phone,
-                        password: pass,
-                        balance: "0.00"
-                    }).then(() => {
-                        alert("Account Created Successfully!");
-                        localStorage.setItem('userPhone', phone);
-                        window.location.href = "dashboard.html";
-                    });
+                    // Naya Registration Alert
+                    const checkSS = confirm("Kya aapne password ka SCREENSHOT le liya hai? Hum password reset nahi karte.");
+                    
+                    if (checkSS) {
+                        userRef.set({
+                            phone: phone,
+                            password: pass,
+                            balance: "0.00"
+                        }).then(() => {
+                            alert("Account Ban Gaya! Username/Password yaad rakhein.");
+                            localStorage.setItem('userPhone', phone);
+                            window.location.href = "dashboard.html";
+                        });
+                    } else {
+                        btn.innerText = "Login / Register";
+                        btn.disabled = false;
+                    }
                 }
             }).catch((err) => {
                 alert("Error: " + err.message);
