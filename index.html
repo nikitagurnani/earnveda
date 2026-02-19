@@ -21,7 +21,6 @@
         }
         h2 { color: #1a73e8; margin-bottom: 10px; font-size: 30px; }
         
-        /* Dangerous Warning Box */
         .danger-alert {
             background: #fff0f0; color: #d93025; padding: 15px; 
             border-radius: 12px; font-size: 13px; margin-bottom: 20px; 
@@ -54,7 +53,7 @@
         
         <div class="danger-alert">
             🛑 <b>SABSE ZAROORI:</b><br>
-            Agar aap password bhool gaye, toh account <b>RESET NAHI HOGA</b> aur aapka sara balance/data khatam ho jayega. Kripya iska <b>SCREENSHOT</b> le lein!
+            Agar aap password bhool gaye, toh account <b>RESET NAHI HOGA</b>. Kripya iska <b>SCREENSHOT</b> le lein!
         </div>
 
         <input type="number" id="phone" placeholder="Mobile Number">
@@ -66,7 +65,7 @@
             <input type="checkbox" onclick="togglePass()" id="check"> Show Password
         </label>
 
-        <button class="btn-login" id="loginBtn" onclick="handleLogin()">Login / Register</button>
+        <button class="btn-login" id="loginBtn" onclick="askConfirmation()">Login / Register</button>
     </div>
 
     <script>
@@ -82,31 +81,44 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Password Show/Hide Function
         function togglePass() {
             var x = document.getElementById("password");
-            if (x.type === "password") { x.type = "text"; } 
-            else { x.type = "password"; }
+            x.type = (x.type === "password") ? "text" : "password";
         }
 
-        // Strong Password Validation
         function validate(p) {
             const r = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{6,}$/;
             return r.test(p);
         }
 
-        function handleLogin() {
+        // STEP 1: Pehle SS Confirmation poochenge
+        function askConfirmation() {
             const phone = document.getElementById('phone').value.trim();
             const pass = document.getElementById('password').value.trim();
-            const btn = document.getElementById('loginBtn');
 
-            if (phone.length < 10) { alert("Mobile number galat hai!"); return; }
-            
-            if (!validate(pass)) {
-                alert("STRONG PASSWORD LAGAYEIN!\nKam se kam 6 akshar, ek Bada Letter, ek Chota Letter, ek Number aur ek Symbol (@#$) hona chahiye.");
+            if (phone.length < 10 || pass === "") {
+                alert("Mobile number aur password bhariye!");
                 return;
             }
 
+            if (!validate(pass)) {
+                alert("STRONG PASSWORD LAGAYEIN!\nMin. 6 akshar, ek Bada Letter, ek Chota Letter, ek Number aur ek Symbol (@#$) zaroori hai.");
+                return;
+            }
+
+            // Naya Confirmation Pop-up
+            const confirmSS = confirm("🛑 WAIT! Kya aapne Number aur Password ka SCREENSHOT (SS) le liya hai?\n\nPassword bhoolne par hum account reset nahi karenge.");
+            
+            if (confirmSS) {
+                handleLogin(phone, pass);
+            } else {
+                alert("Pehle Screenshot le lein, phir login karein.");
+            }
+        }
+
+        // STEP 2: Agar user 'OK' kare tab login start hoga
+        function handleLogin(phone, pass) {
+            const btn = document.getElementById('loginBtn');
             btn.innerText = "Processing...";
             btn.disabled = true;
 
@@ -116,14 +128,11 @@
                         localStorage.setItem('userPhone', phone);
                         window.location.href = "dashboard.html";
                     } else {
-                        alert("Galat Password! Account reset nahi ho sakta.");
+                        alert("Galat Password!");
                         btn.innerText = "Login / Register";
                         btn.disabled = false;
                     }
                 } else {
-                    // Alert for Screenshot
-                    alert("WARNING: Account banne ja raha hai. Is password ka screenshot le lein, reset ka koi option nahi hai!");
-                    
                     db.ref('users/' + phone).set({
                         phone: phone, password: pass, balance: "0.00"
                     }).then(() => {
@@ -132,6 +141,10 @@
                         window.location.href = "dashboard.html";
                     });
                 }
+            }).catch((err) => {
+                alert("Error: " + err.message);
+                btn.disabled = false;
+                btn.innerText = "Login / Register";
             });
         }
     </script>
