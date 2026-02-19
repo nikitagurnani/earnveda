@@ -3,18 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="monetag" content="c72238220f80276f68c30169d6d8561e">
     <title>EarnVeda Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm border-t-4 border-blue-600">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm">
         <h1 class="text-3xl font-bold text-center text-blue-600 mb-6">EarnVeda</h1>
-        <div class="space-y-4">
-            <input type="number" id="phone" placeholder="Mobile Number" class="w-full px-4 py-3 rounded-lg border border-gray-300 outline-none">
-            <input type="password" id="password" placeholder="Password" class="w-full px-4 py-3 rounded-lg border border-gray-300 outline-none">
-            <button onclick="handleAuth()" id="loginBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold text-lg">Login / Register</button>
-        </div>
+        <input type="number" id="phone" placeholder="Phone Number" class="w-full px-4 py-3 rounded-lg border mb-4 outline-none">
+        <input type="password" id="password" placeholder="Password" class="w-full px-4 py-3 rounded-lg border mb-4 outline-none">
+        <button onclick="handleAuth()" id="loginBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">Login / Register</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -36,23 +33,21 @@
         function handleAuth() {
             let phone = document.getElementById('phone').value.trim();
             const pass = document.getElementById('password').value.trim();
+            if (phone.length > 10) phone = phone.slice(-10);
+            if (phone.length < 10 || !pass) return alert("Enter 10 digits!");
 
-            if (phone.length > 10) { phone = phone.slice(-10); }
-            if (phone.length < 10 || !pass) { alert("Enter 10 digits!"); return; }
+            document.getElementById('loginBtn').innerText = "Processing...";
 
-            document.getElementById('loginBtn').innerText = "Wait...";
-
-            database.ref('users/' + phone).once('value', (snapshot) => {
-                if (snapshot.exists()) {
-                    if (snapshot.val().password.toString() === pass) {
+            database.ref('users/' + phone).once('value', (s) => {
+                if (s.exists()) {
+                    if (s.val().password.toString() === pass) {
                         localStorage.setItem('userPhone', phone);
                         window.location.href = 'dashboard.html';
                     } else { alert("Wrong Password!"); location.reload(); }
                 } else {
-                    if (confirm("Screenshot liya?")) {
-                        database.ref('users/' + phone).set({
-                            phone: phone, password: pass, balance: "0.00"
-                        }).then(() => { alert("Done! Login now."); location.reload(); });
+                    if (confirm("Register this number?")) {
+                        database.ref('users/' + phone).set({ phone, password: pass, balance: "0.00" })
+                        .then(() => { alert("Done! Login now."); location.reload(); });
                     } else { location.reload(); }
                 }
             });
