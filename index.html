@@ -5,13 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EarnVeda Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm">
-        <h1 class="text-3xl font-bold text-center text-blue-600 mb-6">EarnVeda</h1>
-        <input type="number" id="phone" placeholder="Phone Number" class="w-full px-4 py-3 rounded-lg border mb-4 outline-none">
-        <input type="password" id="password" placeholder="Password" class="w-full px-4 py-3 rounded-lg border mb-4 outline-none">
-        <button onclick="handleAuth()" id="loginBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">Login / Register</button>
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm border-t-4 border-blue-600">
+        <h1 class="text-3xl font-bold text-center text-blue-600 mb-6 font-mono">EarnVeda</h1>
+        <div class="space-y-4">
+            <input type="number" id="phone" placeholder="Phone Number" class="w-full px-4 py-3 rounded-lg border outline-none focus:border-blue-500">
+            <div class="relative">
+                <input type="password" id="password" placeholder="Password" class="w-full px-4 py-3 rounded-lg border outline-none focus:border-blue-500">
+                <button onclick="togglePass()" class="absolute right-3 top-3.5 text-gray-400"><i class="fas fa-eye" id="eyeIcon"></i></button>
+            </div>
+            <button onclick="handleAuth()" id="loginBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">Login / Register</button>
+        </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -30,13 +36,27 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
+        function togglePass() {
+            const passInput = document.getElementById('password');
+            const icon = document.getElementById('eyeIcon');
+            if (passInput.type === "password") {
+                passInput.type = "text";
+                icon.classList.replace('fa-eye', 'fa-eye');
+            } else {
+                passInput.type = "password";
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            }
+        }
+
         function handleAuth() {
+            localStorage.clear();
             let phone = document.getElementById('phone').value.trim();
             const pass = document.getElementById('password').value.trim();
+
             if (phone.length > 10) phone = phone.slice(-10);
             if (phone.length < 10 || !pass) return alert("Enter 10 digits!");
 
-            document.getElementById('loginBtn').innerText = "Processing...";
+            document.getElementById('loginBtn').innerText = "Wait...";
 
             database.ref('users/' + phone).once('value', (s) => {
                 if (s.exists()) {
@@ -45,7 +65,7 @@
                         window.location.href = 'dashboard.html';
                     } else { alert("Wrong Password!"); location.reload(); }
                 } else {
-                    if (confirm("Register this number?")) {
+                    if (confirm("Screenshot liya?")) {
                         database.ref('users/' + phone).set({ phone, password: pass, balance: "0.00" })
                         .then(() => { alert("Done! Login now."); location.reload(); });
                     } else { location.reload(); }
