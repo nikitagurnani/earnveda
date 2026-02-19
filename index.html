@@ -14,30 +14,68 @@
 <body class="flex items-center justify-center p-4">
     <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800">EarnVeda</h1>
-            <p class="text-gray-500">Founder: Nikita Gurnani</p>
+            <h1 class="text-4xl font-bold text-gray-800 tracking-tight">EarnVeda</h1>
+            <p class="text-gray-500 font-medium">Founder: Nikita Gurnani</p>
         </div>
         
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                <input type="text" id="fullName" placeholder="Enter your name" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="text" id="fullName" placeholder="Enter your full name" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Phone Number</label>
-                <input type="number" id="phone" placeholder="Enter phone number" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="number" id="phone" placeholder="Enter phone number" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
             </div>
-            <button onclick="login()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-blue-700 transition">Start Earning</button>
+            <button onclick="login()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg hover:shadow-blue-500/50 transition-all duration-300">Start Earning</button>
         </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
     <script>
-        // Aapka purana login logic yahan aayega, 
-        // bas 'fullName' ko bhi database mein save karwa denge.
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
+            authDomain: "earnify-official.firebaseapp.com",
+            databaseURL: "https://earnify-official-default-rtdb.firebaseio.com",
+            projectId: "earnify-official",
+            storageBucket: "earnify-official.firebasestorage.app",
+            messagingSenderId: "392652401236",
+            appId: "1:392652401236:web:00bd6e145cb6ac1f6c9bc1"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        function login() {
+            const name = document.getElementById('fullName').value;
+            const phone = document.getElementById('phone').value;
+
+            if (name === "" || phone === "") {
+                alert("Please fill both name and phone number!");
+                return;
+            }
+
+            const userRef = database.ref('users/' + phone);
+            userRef.once('value', (snapshot) => {
+                if (!snapshot.exists()) {
+                    userRef.set({
+                        fullName: name,
+                        phone: phone,
+                        balance: 0,
+                        adsWatched: 0,
+                        joinedDate: new Date().toLocaleDateString()
+                    });
+                } else {
+                    // Update name if user exists but name was blank
+                    userRef.update({ fullName: name });
+                }
+                
+                localStorage.setItem('userPhone', phone);
+                localStorage.setItem('userName', name);
+                window.location.href = 'dashboard.html';
+            });
+        }
     </script>
 </body>
 </html>
