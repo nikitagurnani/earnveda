@@ -29,7 +29,7 @@
         </div>
         <div class="card">
             <h3>Daily Tasks</h3>
-            <button class="btn-main" onclick="handleAd()">📺 Watch Ad & Earn ₹0.50</button>
+            <button class="btn-main" onclick="handleAd()">📺 Watch Ad & Earn ₹0.15</button>
         </div>
     </div>
 
@@ -57,7 +57,6 @@
     </div>
 
     <script>
-        // FIREBASE SETUP
         const firebaseConfig = {
             apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
             authDomain: "earnify-official.firebaseapp.com",
@@ -71,26 +70,22 @@
         const db = firebase.database();
         const userPhone = localStorage.getItem('userPhone');
 
-        // Agar login nahi hai toh bahar pheko
         if (!userPhone) {
             window.location.href = "index.html";
         }
 
-        // Realtime Balance Update
         db.ref('users/' + userPhone).on('value', (s) => {
             if(s.exists()){
                 document.getElementById('bal').innerText = s.val().balance || "0.00";
             }
         });
 
-        // NIKITA'S ADMIN BUTTON
         if (userPhone === "7067007802") {
             document.getElementById('adminArea').innerHTML = `
                 <button onclick="window.location.href='admin.html'" style="background:gold; padding:15px; width:100%; border-radius:12px; margin-bottom:15px; font-weight:bold; border:none; cursor:pointer;">⭐ OPEN ADMIN PANEL</button>
             `;
         }
 
-        // Tab Switching Logic
         function switchTab(id, title, el) {
             document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active-nav'));
@@ -99,12 +94,9 @@
             el.classList.add('active-nav');
         }
 
-        // MONEY EARNING LOGIC (Updated)
         function handleAd() {
-            // 1. Open the Ad
             window.open("https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311", "_blank");
             
-            // 2. Add Money to Database
             const userRef = db.ref('users/' + userPhone);
             userRef.once('value').then((snapshot) => {
                 let currentBal = 0;
@@ -112,12 +104,13 @@
                     currentBal = parseFloat(snapshot.val().balance);
                 }
                 
-                let newBal = (currentBal + 0.50).toFixed(2); // Adding ₹0.50
+                // Reward set to 0.15
+                let newBal = (currentBal + 0.15).toFixed(2); 
 
                 userRef.update({
                     balance: newBal
                 }).then(() => {
-                    alert("Success! ₹0.50 added to your wallet.");
+                    alert("Success! ₹0.15 added to your wallet.");
                 }).catch((err) => {
                     alert("Database Error: " + err.message);
                 });
