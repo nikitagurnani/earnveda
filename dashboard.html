@@ -3,23 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EarnVeda Dashboard</title>
+    <title>EarnVeda Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; text-align: center; padding: 20px; }
-        .card { background: white; padding: 40px; border-radius: 20px; margin-top: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .bal { font-size: 50px; color: #28a745; font-weight: bold; margin: 20px 0; }
-        .btn { background: #1a73e8; color: white; padding: 15px 30px; border-radius: 10px; border: none; cursor: pointer; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding-bottom: 70px; text-align: center; }
+        .header { background: #1a73e8; color: white; padding: 20px; font-size: 22px; font-weight: bold; }
+        .tab-content { display: none; padding: 20px; }
+        .active { display: block; }
+        .card { background: white; margin-bottom: 20px; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .balance-amount { font-size: 48px; color: #28a745; font-weight: bold; }
+        .btn-main { background: #1a73e8; color: white; border: none; padding: 18px; border-radius: 12px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #ddd; }
+        .nav-item { cursor: pointer; padding: 12px 0; flex: 1; font-size: 14px; }
+        .active-nav { color: #1a73e8; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>Welcome to EarnVeda</h1>
-        <p>Available Balance</p>
-        <div class="bal">₹<span id="bal">0.00</span></div>
-        <button class="btn" onclick="logout()">Logout</button>
+    <div class="header" id="pageTitle">EarnVeda</div>
+
+    <div id="homeTab" class="tab-content active">
+        <div class="card"><p>Balance</p><div class="balance-amount">₹<span id="bal">0.00</span></div></div>
+        <div class="card"><h3>Tasks</h3><button class="btn-main" onclick="handleAd()">📺 Watch Ad & Earn</button></div>
     </div>
+
+    <div id="transTab" class="tab-content"><div class="card"><h3>History</h3><div id="historyList">Loading...</div></div></div>
+
+    <div id="profileTab" class="tab-content">
+        <div id="adminArea"></div> <div class="card"><h3>Withdraw</h3><input type="text" id="upi" placeholder="UPI ID" style="width:90%; padding:10px; margin-bottom:10px;"><button class="btn-main" onclick="alert('Min ₹100 required')">Withdraw</button></div>
+        <button onclick="logout()" style="color:red; background:none; border:none; margin-top:20px;">Logout</button>
+    </div>
+
+    <div class="nav-bar">
+        <div class="nav-item active-nav" onclick="switchTab('homeTab', 'EarnVeda', this)">🏠 Home</div>
+        <div class="nav-item" onclick="switchTab('transTab', 'History', this)">📊 History</div>
+        <div class="nav-item" onclick="switchTab('profileTab', 'Profile', this)">👤 Profile</div>
+    </div>
+
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
@@ -31,13 +51,29 @@
             appId: "1:392652401236:web:00bd6e145cb6ac1f6c9bc1"
         };
         firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
         const userPhone = localStorage.getItem('userPhone');
-        if (!userPhone) { window.location.href = "index.html"; }
-        else {
-            firebase.database().ref('users/' + userPhone).on('value', (s) => {
-                document.getElementById('bal').innerText = s.val() ? (s.val().balance || "0.00") : "0.00";
-            });
+
+        if (!userPhone) window.location.href = "index.html";
+
+        db.ref('users/' + userPhone).on('value', (s) => {
+            document.getElementById('bal').innerText = s.val() ? (s.val().balance || "0.00") : "0.00";
+        });
+
+        // ADMIN PANEL BUTTON (SIRF NIKITA KE LIYE)
+        if (userPhone === "7067007802") {
+            document.getElementById('adminArea').innerHTML = `<button onclick="window.location.href='admin.html'" style="background:gold; padding:15px; width:100%; border-radius:12px; margin-bottom:15px; font-weight:bold;">⭐ OPEN ADMIN PANEL</button>`;
         }
+
+        function switchTab(id, title, el) {
+            document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active-nav'));
+            document.getElementById(id).classList.add('active');
+            document.getElementById('pageTitle').innerText = title;
+            el.classList.add('active-nav');
+        }
+
+        function handleAd() { window.open("https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311", "_blank"); alert("Ad started! Reward will be added soon."); }
         function logout() { localStorage.clear(); window.location.href = "index.html"; }
     </script>
 </body>
