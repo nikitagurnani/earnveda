@@ -17,22 +17,18 @@
         <h1 class="text-3xl font-bold text-center text-blue-600 mb-6 font-mono tracking-tighter">EarnVeda</h1>
         
         <div class="space-y-4">
-            <div class="relative">
-                <span class="absolute left-3 top-3.5 text-gray-400"><i class="fas fa-phone"></i></span>
-                <input type="number" id="phone" placeholder="Phone Number" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-gray-50 outline-none focus:border-blue-500">
-            </div>
+            <input type="number" id="phone" placeholder="Phone Number" class="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 outline-none focus:border-blue-500">
             
             <div class="relative">
-                <span class="absolute left-3 top-3.5 text-gray-400"><i class="fas fa-lock"></i></span>
-                <input type="password" id="password" placeholder="Password" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-gray-50 outline-none focus:border-blue-500">
+                <input type="password" id="password" placeholder="Password" class="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 outline-none focus:border-blue-500">
                 <button onclick="togglePass()" class="absolute right-3 top-3.5 text-gray-400"><i class="fas fa-eye" id="eyeIcon"></i></button>
             </div>
             
-            <button onclick="handleAuth()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-blue-700 transition shadow-lg shadow-blue-200">Login / Register</button>
+            <button onclick="handleAuth()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-blue-700 transition shadow-lg">Login / Register</button>
             
             <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
                 <p class="text-[10px] text-yellow-700 text-center font-bold uppercase leading-tight">
-                    ⚠️ RUKIYE! Password dikha kar uska SCREENSHOT le lein. Password bhoolne par account wapas nahi milega!
+                    ⚠️ RUKIYE! Password dikha kar uska SCREENSHOT le lein!
                 </p>
             </div>
         </div>
@@ -57,53 +53,32 @@
         function togglePass() {
             const passInput = document.getElementById('password');
             const icon = document.getElementById('eyeIcon');
-            if (passInput.type === "password") {
-                passInput.type = "text";
-                icon.classList.replace('fa-eye', 'fa-eye-slash');
-            } else {
-                passInput.type = "password";
-                icon.classList.replace('fa-eye-slash', 'fa-eye');
-            }
+            passInput.type = passInput.type === "password" ? "text" : "password";
+            icon.classList.toggle('fa-eye-slash');
         }
 
         function handleAuth() {
-            const phone = document.getElementById('phone').value;
-            const pass = document.getElementById('password').value;
+            const phone = document.getElementById('phone').value.trim();
+            const pass = document.getElementById('password').value.trim();
 
-            if (phone.length < 10 || !pass) {
-                alert("Please enter valid Phone and Password!");
-                return;
-            }
+            if (!phone || !pass) { alert("Fields empty!"); return; }
 
             const userRef = database.ref('users/' + phone);
             userRef.once('value', (snapshot) => {
                 if (snapshot.exists()) {
-                    // Login Mode
-                    if (snapshot.val().password === pass) {
+                    const dbPass = snapshot.val().password.toString().trim();
+                    if (dbPass === pass) {
                         localStorage.setItem('userPhone', phone);
-                        // Is user ka naam check karo
-                        if (!snapshot.val().fullName || snapshot.val().fullName === "") {
-                            window.location.href = 'dashboard.html?updateName=true';
-                        } else {
-                            window.location.href = 'dashboard.html';
-                        }
+                        // Dashboard par redirect
+                        window.location.href = 'dashboard.html?updateName=true';
                     } else {
-                        alert("Wrong Password!");
+                        alert("Galat Password! Database mein '" + dbPass + "' hai.");
                     }
                 } else {
-                    // Register Mode
-                    const confirmSS = confirm("Kya aapne password dikha kar SCREENSHOT le liya hai? Iske bina account recovery nahi hogi.");
+                    const confirmSS = confirm("Screenshot liya?");
                     if (confirmSS) {
-                        userRef.set({
-                            phone: phone,
-                            password: pass,
-                            balance: 0,
-                            adsWatched: 0,
-                            fullName: "",
-                            joinedDate: new Date().toLocaleDateString()
-                        }).then(() => {
-                            alert("Registration Successful! Now Login.");
-                        });
+                        userRef.set({ phone: phone, password: pass, balance: 0, adsWatched: 0, fullName: "" })
+                        .then(() => alert("Registration Done! Login Now."));
                     }
                 }
             });
