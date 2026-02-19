@@ -4,30 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="monetag" content="c72238220f80276f68c30169d6d8561e">
-    <title>EarnVeda - Login</title>
+    <title>EarnVeda - Login & Register</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); min-height: 100vh; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
     </style>
 </head>
 <body class="flex items-center justify-center p-4">
-    <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="glass p-8 rounded-2xl shadow-2xl w-full max-w-md">
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800 tracking-tight">EarnVeda</h1>
-            <p class="text-gray-500 font-medium">Founder: Nikita Gurnani</p>
+            <h1 class="text-4xl font-bold text-gray-800">EarnVeda</h1>
+            <p class="text-xs text-red-500 mt-2 font-bold uppercase">Registration ke baad Password ka Screenshot zaroor lein!</p>
         </div>
         
-        <div class="space-y-4">
+        <div id="authForm" class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                <input type="text" id="fullName" placeholder="Enter your full name" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <input type="text" id="fullName" placeholder="Enter your full name" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Phone Number</label>
-                <input type="number" id="phone" placeholder="Enter phone number" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <input type="number" id="phone" placeholder="Enter phone number" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
-            <button onclick="login()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg hover:shadow-blue-500/50 transition-all duration-300">Start Earning</button>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Password</label>
+                <input type="password" id="password" placeholder="Enter password" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <div class="flex gap-2">
+                <button onclick="handleAuth('login')" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg">Login</button>
+                <button onclick="handleAuth('register')" class="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-lg">Register</button>
+            </div>
         </div>
     </div>
 
@@ -47,34 +56,52 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        function login() {
+        function handleAuth(type) {
             const name = document.getElementById('fullName').value;
             const phone = document.getElementById('phone').value;
+            const pass = document.getElementById('password').value;
 
-            if (name === "" || phone === "") {
-                alert("Please fill both name and phone number!");
+            if (!phone || !pass || (type === 'register' && !name)) {
+                alert("Please fill all fields!");
                 return;
             }
 
             const userRef = database.ref('users/' + phone);
-            userRef.once('value', (snapshot) => {
-                if (!snapshot.exists()) {
-                    userRef.set({
-                        fullName: name,
-                        phone: phone,
-                        balance: 0,
-                        adsWatched: 0,
-                        joinedDate: new Date().toLocaleDateString()
-                    });
-                } else {
-                    // Update name if user exists but name was blank
-                    userRef.update({ fullName: name });
-                }
-                
-                localStorage.setItem('userPhone', phone);
-                localStorage.setItem('userName', name);
-                window.location.href = 'dashboard.html';
-            });
+
+            if (type === 'register') {
+                userRef.once('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        alert("User already exists! Please login.");
+                    } else {
+                        userRef.set({
+                            fullName: name,
+                            phone: phone,
+                            password: pass,
+                            balance: 0,
+                            adsWatched: 0,
+                            joinedDate: new Date().toLocaleDateString()
+                        }).then(() => {
+                            alert("Registration Successful! Please take a SCREENSHOT of your password.");
+                            saveAndRedirect(phone, name);
+                        });
+                    }
+                });
+            } else {
+                userRef.once('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (snapshot.exists() && data.password === pass) {
+                        saveAndRedirect(phone, data.fullName);
+                    } else {
+                        alert("Invalid Phone or Password!");
+                    }
+                });
+            }
+        }
+
+        function saveAndRedirect(phone, name) {
+            localStorage.setItem('userPhone', phone);
+            localStorage.setItem('userName', name);
+            window.location.href = 'dashboard.html';
         }
     </script>
 </body>
