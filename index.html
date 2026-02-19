@@ -3,27 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EarnVeda Login</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>EarnVeda - Login</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 320px; text-align: center; }
+        h2 { color: #1a73e8; margin-bottom: 25px; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
+        .btn-login { background: #1a73e8; color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .footer-text { margin-top: 20px; font-size: 12px; color: #777; }
+    </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm border-t-4 border-blue-600">
-        <h1 class="text-3xl font-bold text-center text-blue-600 mb-6 font-mono">EarnVeda</h1>
-        <div class="space-y-4">
-            <input type="number" id="phone" placeholder="Phone Number" class="w-full px-4 py-3 rounded-lg border outline-none focus:border-blue-500">
-            <div class="relative">
-                <input type="password" id="password" placeholder="Password" class="w-full px-4 py-3 rounded-lg border outline-none focus:border-blue-500">
-                <button onclick="togglePass()" class="absolute right-3 top-3.5 text-gray-400"><i class="fas fa-eye" id="eyeIcon"></i></button>
-            </div>
-            <button onclick="handleAuth()" id="loginBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">Login / Register</button>
-        </div>
+<body>
+
+    <div class="login-card">
+        <h2>EarnVeda Login</h2>
+        <input type="number" id="phone" placeholder="Phone Number">
+        <input type="password" id="password" placeholder="Password">
+        <button class="btn-login" id="loginBtn" onclick="handleLogin()">Login / Register</button>
+        <p class="footer-text">Naya number hai toh apne aap Register ho jayega.</p>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-
     <script>
+        // FIREBASE CONFIG (Wahi jo dashboard mein hai)
         const firebaseConfig = {
             apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
             authDomain: "earnify-official.firebaseapp.com",
@@ -34,42 +37,50 @@
             appId: "1:392652401236:web:00bd6e145cb6ac1f6c9bc1"
         };
         firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        const db = firebase.database();
 
-        function togglePass() {
-            const passInput = document.getElementById('password');
-            const icon = document.getElementById('eyeIcon');
-            if (passInput.type === "password") {
-                passInput.type = "text";
-                icon.classList.replace('fa-eye', 'fa-eye');
-            } else {
-                passInput.type = "password";
-                icon.classList.replace('fa-eye', 'fa-eye-slash');
-            }
-        }
-
-        function handleAuth() {
-            localStorage.clear();
-            let phone = document.getElementById('phone').value.trim();
+        function handleLogin() {
+            const phone = document.getElementById('phone').value.trim();
             const pass = document.getElementById('password').value.trim();
+            const btn = document.getElementById('loginBtn');
 
-            if (phone.length > 10) phone = phone.slice(-10);
-            if (phone.length < 10 || !pass) return alert("Enter 10 digits!");
+            if (phone.length < 10 || pass === "") {
+                alert("Sahi Number aur Password dalein!");
+                return;
+            }
 
-            document.getElementById('loginBtn').innerText = "Wait...";
+            btn.innerText = "Checking...";
+            btn.disabled = true;
 
-            database.ref('users/' + phone).once('value', (s) => {
-                if (s.exists()) {
-                    if (s.val().password.toString() === pass) {
+            const userRef = db.ref('users/' + phone);
+
+            userRef.once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    // Agar user pehle se hai, toh password match karo
+                    if (snapshot.val().password === pass) {
                         localStorage.setItem('userPhone', phone);
-                        window.location.href = 'dashboard.html';
-                    } else { alert("Wrong Password!"); location.reload(); }
+                        window.location.href = "dashboard.html";
+                    } else {
+                        alert("Galat Password!");
+                        btn.innerText = "Login / Register";
+                        btn.disabled = false;
+                    }
                 } else {
-                    if (confirm("Screenshot liya?")) {
-                        database.ref('users/' + phone).set({ phone, password: pass, balance: "0.00" })
-                        .then(() => { alert("Done! Login now."); location.reload(); });
-                    } else { location.reload(); }
+                    // Agar naya user hai (Jaise 8827...), toh uska account banao
+                    userRef.set({
+                        phone: phone,
+                        password: pass,
+                        balance: "0.00"
+                    }).then(() => {
+                        alert("Account Created Successfully!");
+                        localStorage.setItem('userPhone', phone);
+                        window.location.href = "dashboard.html";
+                    });
                 }
+            }).catch((err) => {
+                alert("Error: " + err.message);
+                btn.innerText = "Login / Register";
+                btn.disabled = false;
             });
         }
     </script>
