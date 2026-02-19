@@ -3,100 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <meta name="monetag" content="c72238220f80276f68c30169d6d8561e">
-
     <title>EarnVeda - Secure Login</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     
     <style>
-        /* Sundar Background Gradient */
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #1a73e8 0%, #00d2ff 100%); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            margin: 0; 
-            padding: 20px;
+            font-family: 'Segoe UI', sans-serif; 
+            background: linear-gradient(45deg, #090979 0%, #00d4ff 100%); 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; margin: 0; padding: 20px; 
         }
-
         .login-card { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 25px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2); 
-            width: 100%; 
-            max-width: 360px; 
-            text-align: center; 
+            background: white; padding: 30px; border-radius: 25px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3); width: 100%; max-width: 350px; text-align: center; 
         }
-
-        h2 { color: #1a73e8; margin-bottom: 15px; font-size: 28px; }
-
-        .warning-box { 
-            background: #fff4e5; 
-            color: #b36b00; 
-            padding: 12px; 
-            border-radius: 12px; 
-            font-size: 12px; 
-            margin-bottom: 20px; 
-            text-align: left; 
-            border-left: 5px solid #ff9800;
-            line-height: 1.5;
+        h2 { color: #1a73e8; margin-bottom: 10px; font-size: 30px; }
+        
+        /* Dangerous Warning Box */
+        .danger-alert {
+            background: #fff0f0; color: #d93025; padding: 15px; 
+            border-radius: 12px; font-size: 13px; margin-bottom: 20px; 
+            border: 1px solid #ffcfcf; text-align: left; line-height: 1.4;
         }
 
         input { 
-            width: 100%; 
-            padding: 14px; 
-            margin-bottom: 12px; 
-            border: 1px solid #ddd; 
-            border-radius: 12px; 
-            box-sizing: border-box; 
-            font-size: 16px;
-            outline: none;
+            width: 100%; padding: 14px; margin-bottom: 12px; 
+            border: 1px solid #ddd; border-radius: 12px; box-sizing: border-box; 
+            font-size: 16px; outline: none;
         }
+        
+        .pass-rules { font-size: 11px; color: #666; text-align: left; margin-bottom: 10px; display: block; }
 
-        input:focus { border-color: #1a73e8; box-shadow: 0 0 5px rgba(26,115,232,0.3); }
-
-        .pass-rules {
-            font-size: 11px;
-            color: #d93025;
-            text-align: left;
-            margin-top: -8px;
-            margin-bottom: 10px;
-            display: block;
-        }
-
-        .show-pass { 
-            text-align: left; 
-            font-size: 14px; 
-            margin-bottom: 20px; 
-            display: flex; 
-            align-items: center; 
-            gap: 8px; 
-            cursor: pointer; 
-            color: #555;
+        .show-pass-area { 
+            text-align: left; display: flex; align-items: center; 
+            gap: 10px; margin-bottom: 20px; font-size: 14px; color: #444; cursor: pointer;
         }
 
         .btn-login { 
-            background: #1a73e8; 
-            color: white; 
-            border: none; 
-            padding: 16px; 
-            border-radius: 12px; 
-            width: 100%; 
-            font-size: 18px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            transition: 0.3s ease;
+            background: #1a73e8; color: white; border: none; padding: 16px; 
+            border-radius: 12px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; 
         }
-
-        .btn-login:hover { background: #1557b0; transform: translateY(-2px); }
-        .btn-login:disabled { background: #ccc; cursor: not-allowed; }
-
-        .footer-note { font-size: 11px; color: #888; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -104,25 +52,21 @@
     <div class="login-card">
         <h2>EarnVeda</h2>
         
-        <div class="warning-box">
-            ⚠️ <b>Zaroori Suchna:</b><br>
-            - Password ka <b>Screenshot</b> le lein.<br>
-            - Bhoolne par account reset nahi hoga.<br>
-            - Dusra account banana padega.
+        <div class="danger-alert">
+            🛑 <b>SABSE ZAROORI:</b><br>
+            Agar aap password bhool gaye, toh account <b>RESET NAHI HOGA</b> aur aapka sara balance/data khatam ho jayega. Kripya iska <b>SCREENSHOT</b> le lein!
         </div>
 
         <input type="number" id="phone" placeholder="Mobile Number">
         
         <input type="password" id="password" placeholder="Strong Password">
-        <span class="pass-rules">Rules: 6+ Letters, ABC, abc, 123, @#$</span>
+        <span class="pass-rules">Rules: 6+ Letters (A, a), Number (1), Symbol (@)</span>
 
-        <label class="show-pass">
-            <input type="checkbox" onclick="togglePass()" style="width: auto; margin: 0;"> Show Password
+        <label class="show-pass-area">
+            <input type="checkbox" onclick="togglePass()" id="check"> Show Password
         </label>
 
         <button class="btn-login" id="loginBtn" onclick="handleLogin()">Login / Register</button>
-        
-        <p class="footer-note">Strong password hi account ko secure rakhta hai.</p>
     </div>
 
     <script>
@@ -138,16 +82,17 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // Password Show/Hide Function
         function togglePass() {
-            const p = document.getElementById("password");
-            p.type = p.type === "password" ? "text" : "password";
+            var x = document.getElementById("password");
+            if (x.type === "password") { x.type = "text"; } 
+            else { x.type = "password"; }
         }
 
-        // Strong Password Check Function
-        function validatePassword(p) {
-            // Kam se kam 6 char, 1 Upper, 1 Lower, 1 Number, 1 Special
-            const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{6,}$/;
-            return regex.test(p);
+        // Strong Password Validation
+        function validate(p) {
+            const r = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{6,}$/;
+            return r.test(p);
         }
 
         function handleLogin() {
@@ -155,55 +100,38 @@
             const pass = document.getElementById('password').value.trim();
             const btn = document.getElementById('loginBtn');
 
-            if (phone.length < 10) {
-                alert("Kripya sahi 10-digit number dalein!");
-                return;
-            }
-
-            if (!validatePassword(pass)) {
-                alert("Password Rules follow karein: Minimum 6 characters, Capital Letter, Small Letter, Number, aur Symbol (@#$) hona chahiye.");
+            if (phone.length < 10) { alert("Mobile number galat hai!"); return; }
+            
+            if (!validate(pass)) {
+                alert("STRONG PASSWORD LAGAYEIN!\nKam se kam 6 akshar, ek Bada Letter, ek Chota Letter, ek Number aur ek Symbol (@#$) hona chahiye.");
                 return;
             }
 
             btn.innerText = "Processing...";
             btn.disabled = true;
 
-            const userRef = db.ref('users/' + phone);
-
-            userRef.once('value').then((snapshot) => {
-                if (snapshot.exists()) {
-                    // Login check
-                    if (snapshot.val().password.toString() === pass) {
+            db.ref('users/' + phone).once('value').then((s) => {
+                if (s.exists()) {
+                    if (s.val().password.toString() === pass) {
                         localStorage.setItem('userPhone', phone);
                         window.location.href = "dashboard.html";
                     } else {
-                        alert("Galat Password! Agar aap bhool gaye hain toh naya account banana hoga.");
+                        alert("Galat Password! Account reset nahi ho sakta.");
                         btn.innerText = "Login / Register";
                         btn.disabled = false;
                     }
                 } else {
-                    // Naya Registration Alert
-                    const checkSS = confirm("Kya aapne password ka SCREENSHOT le liya hai? Hum password reset nahi karte.");
+                    // Alert for Screenshot
+                    alert("WARNING: Account banne ja raha hai. Is password ka screenshot le lein, reset ka koi option nahi hai!");
                     
-                    if (checkSS) {
-                        userRef.set({
-                            phone: phone,
-                            password: pass,
-                            balance: "0.00"
-                        }).then(() => {
-                            alert("Account Ban Gaya! Username/Password yaad rakhein.");
-                            localStorage.setItem('userPhone', phone);
-                            window.location.href = "dashboard.html";
-                        });
-                    } else {
-                        btn.innerText = "Login / Register";
-                        btn.disabled = false;
-                    }
+                    db.ref('users/' + phone).set({
+                        phone: phone, password: pass, balance: "0.00"
+                    }).then(() => {
+                        alert("Account Ban Gaya! Welcome to EarnVeda.");
+                        localStorage.setItem('userPhone', phone);
+                        window.location.href = "dashboard.html";
+                    });
                 }
-            }).catch((err) => {
-                alert("Error: " + err.message);
-                btn.innerText = "Login / Register";
-                btn.disabled = false;
             });
         }
     </script>
