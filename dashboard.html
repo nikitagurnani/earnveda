@@ -3,35 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EarnVeda Pro</title>
+    <title>EarnVeda Dashboard</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding-bottom: 70px; text-align: center; }
-        .header { background: #1a73e8; color: white; padding: 20px; font-size: 22px; font-weight: bold; }
-        .tab-content { display: none; padding: 20px; }
-        .active { display: block; }
-        .card { background: white; margin-bottom: 20px; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .balance-amount { font-size: 48px; color: #28a745; font-weight: bold; }
-        .btn-main { background: #1a73e8; color: white; border: none; padding: 18px; border-radius: 12px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; }
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #ddd; }
-        .nav-item { cursor: pointer; padding: 12px 0; flex: 1; }
+        body { font-family: sans-serif; background: #f4f7f6; text-align: center; padding: 20px; }
+        .card { background: white; padding: 40px; border-radius: 20px; margin-top: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .bal { font-size: 50px; color: #28a745; font-weight: bold; margin: 20px 0; }
+        .btn { background: #1a73e8; color: white; padding: 15px 30px; border-radius: 10px; border: none; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div class="header" id="pageTitle">EarnVeda</div>
-    <div id="homeTab" class="tab-content active">
-        <div class="card"><p>Balance</p><div class="balance-amount">₹<span id="bal">0.00</span></div></div>
-        <div class="card"><button class="btn-main" id="taskBtn" onclick="handleAd()">📺 Watch Ad</button></div>
+    <div class="card">
+        <h1>Welcome to EarnVeda</h1>
+        <p>Available Balance</p>
+        <div class="bal">₹<span id="bal">0.00</span></div>
+        <button class="btn" onclick="logout()">Logout</button>
     </div>
-    <div id="transTab" class="tab-content"><div class="card"><h3>History</h3><div id="historyList"></div></div></div>
-    <div id="profileTab" class="tab-content"><div class="card"><h3>Profile</h3><button onclick="logout()">Logout</button></div></div>
-    <div class="nav-bar">
-        <div class="nav-item" onclick="switchTab('homeTab', 'EarnVeda')">🏠 Home</div>
-        <div class="nav-item" onclick="switchTab('transTab', 'History')">📊 History</div>
-        <div class="nav-item" onclick="switchTab('profileTab', 'Profile')">👤 Profile</div>
-    </div>
-
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
@@ -43,22 +31,14 @@
             appId: "1:392652401236:web:00bd6e145cb6ac1f6c9bc1"
         };
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        let userPhone = localStorage.getItem('userPhone');
-        if (!userPhone) window.location.href = "index.html";
-
-        function loadData() {
-            db.ref('users/' + userPhone).on('value', (s) => {
+        const userPhone = localStorage.getItem('userPhone');
+        if (!userPhone) { window.location.href = "index.html"; }
+        else {
+            firebase.database().ref('users/' + userPhone).on('value', (s) => {
                 document.getElementById('bal').innerText = s.val() ? (s.val().balance || "0.00") : "0.00";
             });
         }
-        function switchTab(id, t) {
-            document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            document.getElementById('pageTitle').innerText = t;
-        }
         function logout() { localStorage.clear(); window.location.href = "index.html"; }
-        loadData();
     </script>
 </body>
 </html>
