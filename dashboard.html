@@ -1,74 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="monetag" content="c72238220f80276f68c30169d6d8561e">
-    <title>EarnVeda Pro</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding-bottom: 70px; text-align: center; }
-        .header { background: #1a73e8; color: white; padding: 20px; font-size: 22px; font-weight: bold; }
-        .tab-content { display: none; padding: 20px; }
-        .active { display: block; }
-        .card { background: white; margin-bottom: 20px; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .balance-title { color: #666; font-size: 16px; margin: 0; }
-        .balance-amount { font-size: 48px; color: #28a745; font-weight: bold; margin: 10px 0; }
-        .btn-main { background: #1a73e8; color: white; border: none; padding: 18px; border-radius: 12px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .btn-main:disabled { background: #ccc; cursor: not-allowed; }
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #ddd; }
-        .nav-item { cursor: pointer; color: #555; font-size: 14px; text-align: center; flex: 1; }
-        .nav-item.active-nav { color: #1a73e8; font-weight: bold; }
-        input { width: 100%; padding: 15px; margin: 15px 0; border: 1px solid #ccc; border-radius: 12px; box-sizing: border-box; }
-        /* History design update */
-        .history-item { text-align: left; border-bottom: 1px solid #eee; padding: 12px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
-        .history-details { display: flex; flex-direction: column; }
-        .history-date { font-size: 11px; color: #888; margin-top: 4px; }
-        .status-success { color: #28a745; font-weight: bold; }
-    </style>
-</head>
-<body>
-
-<div class="header" id="pageTitle">EarnVeda</div>
-
-<div id="homeTab" class="tab-content active">
-    <div class="card">
-        <p class="balance-title">Available Balance</p>
-        <div class="balance-amount">₹<span id="bal">0.00</span></div>
-    </div>
-    <div class="card">
-        <h3>Daily Earning Task</h3>
-        <p style="color: #666; font-size: 14px;">Watch ad for 20s to get reward.</p>
-        <button class="btn-main" id="taskBtn" onclick="handleAd()">📺 Watch Ad & Earn ₹0.15</button>
-    </div>
-</div>
-
-<div id="transTab" class="tab-content">
-    <div class="card">
-        <h3>Transaction History</h3>
-        <div id="historyList">No transactions yet.</div>
-    </div>
-</div>
-
-<div id="profileTab" class="tab-content">
-    <div class="card">
-        <h3>Withdrawal</h3>
-        <p style="font-size: 14px; color: #1a73e8;">Min. Payout: ₹100</p>
-        <input type="text" id="upi_id" placeholder="Enter UPI ID (e.g., name@okaxis)">
-        <button class="btn-main" style="background: #333;" onclick="requestWithdrawal()">Withdraw Full Balance</button>
-    </div>
-    <button class="btn-main" style="background: #dc3545; width: 80%;" onclick="logout()">Logout</button>
-</div>
-
-<div class="nav-bar">
-    <div class="nav-item active-nav" onclick="switchTab('homeTab', 'EarnVeda', this)">🏠<br>Home</div>
-    <div class="nav-item" onclick="switchTab('transTab', 'History', this)">📊<br>History</div>
-    <div class="nav-item" onclick="switchTab('profileTab', 'Profile', this)">👤<br>Profile</div>
-</div>
-
-<script>
     const firebaseConfig = {
         apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
         authDomain: "earnify-official.firebaseapp.com",
@@ -81,31 +10,31 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const auth = firebase.auth();
+    
+    // Nikita, hum yahan localStorage use karenge kyunki aapka login page localStorage set kar raha hai
+    let userPhone = localStorage.getItem('userPhone');
 
-    let userPhone = "";
-    let isProcessing = false;
-    const ads = ["https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311", "https://omg10.com/4/10581177"];
-
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            userPhone = user.email.split('@')[0];
-            loadData();
-        } else { window.location.href = "index.html"; }
-    });
+    if (!userPhone) {
+        window.location.href = "index.html";
+    } else {
+        loadData();
+        checkAdmin();
+        checkNameUpdate();
+    }
 
     function loadData() {
+        // User Balance Load
         db.ref('users/' + userPhone).on('value', (snapshot) => {
             const data = snapshot.val();
             document.getElementById('bal').innerText = data ? (data.balance || "0.00") : "0.00";
         });
 
+        // Transactions Load
         db.ref('transactions/' + userPhone).on('value', (snapshot) => {
             const list = document.getElementById('historyList');
             list.innerHTML = "";
             if(snapshot.val()) {
                 Object.values(snapshot.val()).reverse().forEach(t => {
-                    // Yahan date aur time dikhane ka naya design
                     list.innerHTML += `
                     <div class="history-item">
                         <div class="history-details">
@@ -119,6 +48,35 @@
         });
     }
 
+    // NIKITA'S SPECIAL: Name Update Logic
+    function checkNameUpdate() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('updateName')) {
+            setTimeout(() => {
+                let name = prompt("Welcome to EarnVeda! Please enter your Full Name:");
+                if (name && name.trim() !== "") {
+                    db.ref('users/' + userPhone).update({ fullName: name });
+                    alert("Name Updated! Happy Earning.");
+                }
+            }, 1000);
+        }
+    }
+
+    // NIKITA'S SPECIAL: Admin Button (Sirf aapke liye)
+    function checkAdmin() {
+        if (userPhone === "7067007802") {
+            const profileTab = document.getElementById('profileTab');
+            const adminBtn = document.createElement('button');
+            adminBtn.className = "btn-main";
+            adminBtn.style.background = "#FFD700";
+            adminBtn.style.color = "#000";
+            adminBtn.style.marginTop = "10px";
+            adminBtn.innerHTML = "⭐ Open Admin Panel";
+            adminBtn.onclick = () => { window.location.href = 'admin.html'; };
+            profileTab.appendChild(adminBtn);
+        }
+    }
+
     function switchTab(id, title, el) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
@@ -129,6 +87,8 @@
 
     function handleAd() {
         if (isProcessing) return;
+        
+        // Anti-Cheat: New Tab Logic
         window.open(ads[Math.floor(Math.random() * ads.length)], '_blank');
         
         isProcessing = true;
@@ -137,18 +97,22 @@
         btn.innerText = "Verifying Ad... (20s)";
 
         setTimeout(() => {
-            // Naya time format (e.g., 18 Feb, 08:50 PM)
             const now = new Date();
-            const timeOptions = { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' };
-            const formattedTime = now.toLocaleString('en-IN', timeOptions);
+            const formattedTime = now.toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
+            // Reward Update
             db.ref('users/' + userPhone).transaction((currentData) => {
-                if (currentData === null) return { balance: "0.15" };
+                if (currentData === null) return { balance: 0.15, adsWatched: 1 };
                 let currentBal = parseFloat(currentData.balance || 0);
-                currentData.balance = (currentBal + 0.15).toFixed(2);
-                return currentData;
+                let currentAds = parseInt(currentData.adsWatched || 0);
+                return {
+                    ...currentData,
+                    balance: (currentBal + 0.15).toFixed(2),
+                    adsWatched: currentAds + 1
+                };
             });
 
+            // History Update
             db.ref('transactions/' + userPhone).push({
                 amount: "0.15",
                 timestamp: formattedTime
@@ -157,9 +121,12 @@
             isProcessing = false;
             btn.disabled = false;
             btn.innerText = "📺 Watch Ad & Earn ₹0.15";
-            alert("Success! ₹0.15 added to your wallet.");
+            alert("Success! ₹0.15 added.");
         }, 20000);
     }
+
+    let isProcessing = false;
+    const ads = ["https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311", "https://omg10.com/4/10581177"];
 
     function requestWithdrawal() {
         const upi = document.getElementById('upi_id').value;
@@ -179,11 +146,11 @@
             timestamp: formattedTime
         }).then(() => {
             db.ref('users/' + userPhone + '/balance').set("0.00");
-            alert("Withdrawal request of ₹" + bal + " sent successfully!");
+            alert("Withdrawal request sent!");
         });
     }
 
-    function logout() { auth.signOut(); }
-</script>
-</body>
-</html>
+    function logout() { 
+        localStorage.clear(); 
+        window.location.href = "index.html"; 
+    }
