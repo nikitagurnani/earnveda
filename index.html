@@ -7,30 +7,14 @@
     <title>EarnVeda Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        body { background-color: #f3f4f6; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; }
-        .login-card { background: white; padding: 2rem; border-radius: 15px; width: 100%; max-w-sm; }
-    </style>
 </head>
-<body>
-    <div class="login-card shadow-2xl border-t-4 border-blue-600">
-        <h1 class="text-3xl font-bold text-center text-blue-600 mb-6 font-mono tracking-tighter">EarnVeda</h1>
-        
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm border-t-4 border-blue-600">
+        <h1 class="text-3xl font-bold text-center text-blue-600 mb-6 font-mono">EarnVeda</h1>
         <div class="space-y-4">
-            <input type="number" id="phone" placeholder="Phone Number" class="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 outline-none focus:border-blue-500">
-            
-            <div class="relative">
-                <input type="password" id="password" placeholder="Password" class="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 outline-none focus:border-blue-500">
-                <button onclick="togglePass()" class="absolute right-3 top-3.5 text-gray-400"><i class="fas fa-eye" id="eyeIcon"></i></button>
-            </div>
-            
-            <button onclick="handleAuth()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-blue-700 transition shadow-lg">Login / Register</button>
-            
-            <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
-                <p class="text-[10px] text-yellow-700 text-center font-bold uppercase leading-tight">
-                    ⚠️ RUKIYE! Password dikha kar uska SCREENSHOT le lein!
-                </p>
-            </div>
+            <input type="number" id="phone" placeholder="91XXXXXXXXXX" class="w-full px-4 py-3 rounded-lg border border-gray-200 outline-none focus:border-blue-500">
+            <input type="password" id="password" placeholder="Password" class="w-full px-4 py-3 rounded-lg border border-gray-200 outline-none focus:border-blue-500">
+            <button onclick="handleAuth()" id="loginBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-blue-700 transition">Login / Register</button>
         </div>
     </div>
 
@@ -50,38 +34,47 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        function togglePass() {
-            const passInput = document.getElementById('password');
-            const icon = document.getElementById('eyeIcon');
-            passInput.type = passInput.type === "password" ? "text" : "password";
-            icon.classList.toggle('fa-eye-slash');
-        }
-
         function handleAuth() {
-            const phone = document.getElementById('phone').value.trim();
+            let phone = document.getElementById('phone').value.trim();
             const pass = document.getElementById('password').value.trim();
 
-            if (!phone || !pass) { alert("Fields empty!"); return; }
+            if (phone.length > 10) { phone = phone.slice(-10); }
 
-            const userRef = database.ref('users/' + phone);
-            userRef.once('value', (snapshot) => {
+            if (phone.length < 10 || !pass) {
+                alert("Please enter 10 digit number and password!");
+                return;
+            }
+
+            const btn = document.getElementById('loginBtn');
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+
+            database.ref('users/' + phone).once('value', (snapshot) => {
                 if (snapshot.exists()) {
-                    const dbPass = snapshot.val().password.toString().trim();
-                    if (dbPass === pass) {
+                    if (snapshot.val().password.toString() === pass) {
                         localStorage.setItem('userPhone', phone);
-                        // Dashboard par redirect
-                        window.location.href = 'dashboard.html?updateName=true';
+                        window.location.href = 'dashboard.html';
                     } else {
-                        alert("Galat Password! Database mein '" + dbPass + "' hai.");
+                        alert("Wrong Password!");
+                        resetBtn();
                     }
                 } else {
-                    const confirmSS = confirm("Screenshot liya?");
-                    if (confirmSS) {
-                        userRef.set({ phone: phone, password: pass, balance: 0, adsWatched: 0, fullName: "" })
-                        .then(() => alert("Registration Done! Login Now."));
-                    }
+                    if (confirm("Screenshot liya?")) {
+                        database.ref('users/' + phone).set({
+                            phone: phone, password: pass, balance: "0.00", adsWatched: 0
+                        }).then(() => {
+                            alert("Registered! Login now.");
+                            resetBtn();
+                        });
+                    } else { resetBtn(); }
                 }
             });
+        }
+
+        function resetBtn() {
+            const btn = document.getElementById('loginBtn');
+            btn.innerText = "Login / Register";
+            btn.disabled = false;
         }
     </script>
 </body>
