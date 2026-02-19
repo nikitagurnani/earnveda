@@ -23,15 +23,31 @@
     <div class="header" id="pageTitle">EarnVeda</div>
 
     <div id="homeTab" class="tab-content active">
-        <div class="card"><p>Balance</p><div class="balance-amount">₹<span id="bal">0.00</span></div></div>
-        <div class="card"><h3>Tasks</h3><button class="btn-main" onclick="handleAd()">📺 Watch Ad & Earn</button></div>
+        <div class="card">
+            <p>Wallet Balance</p>
+            <div class="balance-amount">₹<span id="bal">0.00</span></div>
+        </div>
+        <div class="card">
+            <h3>Daily Tasks</h3>
+            <button class="btn-main" onclick="handleAd()">📺 Watch Ad & Earn ₹0.50</button>
+        </div>
     </div>
 
-    <div id="transTab" class="tab-content"><div class="card"><h3>History</h3><div id="historyList">Loading...</div></div></div>
+    <div id="transTab" class="tab-content">
+        <div class="card">
+            <h3>Earning History</h3>
+            <div id="historyList">No history yet.</div>
+        </div>
+    </div>
 
     <div id="profileTab" class="tab-content">
-        <div id="adminArea"></div> <div class="card"><h3>Withdraw</h3><input type="text" id="upi" placeholder="UPI ID" style="width:90%; padding:10px; margin-bottom:10px;"><button class="btn-main" onclick="alert('Min ₹100 required')">Withdraw</button></div>
-        <button onclick="logout()" style="color:red; background:none; border:none; margin-top:20px;">Logout</button>
+        <div id="adminArea"></div>
+        <div class="card">
+            <h3>Withdraw Money</h3>
+            <input type="text" id="upi" placeholder="Enter UPI ID" style="width:90%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:8px;">
+            <button class="btn-main" onclick="alert('Minimum ₹100 required for withdrawal')">Withdraw</button>
+        </div>
+        <button onclick="logout()" style="color:red; background:none; border:none; margin-top:20px; cursor:pointer; font-weight:bold;">Logout Account</button>
     </div>
 
     <div class="nav-bar">
@@ -41,6 +57,7 @@
     </div>
 
     <script>
+        // FIREBASE SETUP
         const firebaseConfig = {
             apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
             authDomain: "earnify-official.firebaseapp.com",
@@ -54,17 +71,26 @@
         const db = firebase.database();
         const userPhone = localStorage.getItem('userPhone');
 
-        if (!userPhone) window.location.href = "index.html";
-
-        db.ref('users/' + userPhone).on('value', (s) => {
-            document.getElementById('bal').innerText = s.val() ? (s.val().balance || "0.00") : "0.00";
-        });
-
-        // ADMIN PANEL BUTTON (SIRF NIKITA KE LIYE)
-        if (userPhone === "7067007802") {
-            document.getElementById('adminArea').innerHTML = `<button onclick="window.location.href='admin.html'" style="background:gold; padding:15px; width:100%; border-radius:12px; margin-bottom:15px; font-weight:bold;">⭐ OPEN ADMIN PANEL</button>`;
+        // Agar login nahi hai toh bahar pheko
+        if (!userPhone) {
+            window.location.href = "index.html";
         }
 
+        // Realtime Balance Update
+        db.ref('users/' + userPhone).on('value', (s) => {
+            if(s.exists()){
+                document.getElementById('bal').innerText = s.val().balance || "0.00";
+            }
+        });
+
+        // NIKITA'S ADMIN BUTTON
+        if (userPhone === "7067007802") {
+            document.getElementById('adminArea').innerHTML = `
+                <button onclick="window.location.href='admin.html'" style="background:gold; padding:15px; width:100%; border-radius:12px; margin-bottom:15px; font-weight:bold; border:none; cursor:pointer;">⭐ OPEN ADMIN PANEL</button>
+            `;
+        }
+
+        // Tab Switching Logic
         function switchTab(id, title, el) {
             document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active-nav'));
@@ -73,8 +99,35 @@
             el.classList.add('active-nav');
         }
 
-        function handleAd() { window.open("https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311", "_blank"); alert("Ad started! Reward will be added soon."); }
-        function logout() { localStorage.clear(); window.location.href = "index.html"; }
+        // MONEY EARNING LOGIC (Updated)
+        function handleAd() {
+            // 1. Open the Ad
+            window.open("https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311", "_blank");
+            
+            // 2. Add Money to Database
+            const userRef = db.ref('users/' + userPhone);
+            userRef.once('value').then((snapshot) => {
+                let currentBal = 0;
+                if(snapshot.exists() && snapshot.val().balance) {
+                    currentBal = parseFloat(snapshot.val().balance);
+                }
+                
+                let newBal = (currentBal + 0.50).toFixed(2); // Adding ₹0.50
+
+                userRef.update({
+                    balance: newBal
+                }).then(() => {
+                    alert("Success! ₹0.50 added to your wallet.");
+                }).catch((err) => {
+                    alert("Database Error: " + err.message);
+                });
+            });
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = "index.html";
+        }
     </script>
 </body>
 </html>
