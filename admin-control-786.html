@@ -38,31 +38,32 @@
 <div id="adminPanel" style="display:none;">
   <div class="topbar">
     <span>EarnVeda Master Panel</span>
-    <small id="syncStatus" style="font-size: 12px; color: #22c55e;">Connected ●</small>
+    <small style="font-size: 12px; color: #22c55e;">Live ●</small>
   </div>
+
   <div class="container">
 
     <div class="cards">
-      <div class="card">Total Users: <br><b id="totalUsers">0</b></div>
-      <div class="card">Total Revenue: <br>₹<b id="totalRevenue">0</b></div>
-      <div class="card">Admin (70%): <br>₹<b id="adminShare">0</b></div>
-      <div class="card">Users (30%): <br>₹<b id="userShare">0</b></div>
+      <div class="card">Total Users <br><b id="totalUsers">0</b></div>
+      <div class="card">Total Revenue <br>₹<b id="totalRevenue">0</b></div>
+      <div class="card">Admin (70%) <br>₹<b id="adminShare">0</b></div>
+      <div class="card">Users (30%) <br>₹<b id="userShare">0</b></div>
     </div>
 
     <div style="margin-top: 30px; background: white; padding: 15px; border-radius: 10px;">
-        <h3>Quick Update User Balance</h3>
-        <input type="number" id="userPhone" placeholder="Phone Number" style="width: 40%;">
-        <input type="number" id="newAmount" placeholder="Amount" style="width: 40%;">
-        <button class="approve" onclick="manualUpdate()">Update</button>
+      <h3>Manual Balance Update</h3>
+      <input type="text" id="userPhone" placeholder="Phone Number">
+      <input type="number" id="newAmount" placeholder="New Balance">
+      <button class="approve" onclick="manualUpdate()">Update</button>
     </div>
 
     <h3>Withdrawal Requests</h3>
     <table>
       <thead>
         <tr>
-          <th>User</th>
+          <th>Phone</th>
           <th>Amount</th>
-          <th>Status</th>
+          <th>UPI ID</th>
           <th>Action</th>
         </tr>
       </thead>
@@ -74,93 +75,131 @@
   </div>
 </div>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
 <script>
-// Firebase Config
-const firebaseConfig = { 
-    apiKey: "AIzaSyCLrqzC0q_i7EzWdw_aoGRvI-qD_2kMsc", 
-    projectId: "earnify-official" 
+const firebaseConfig = {
+  apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
+  authDomain: "earnify-official.firebaseapp.com",
+  projectId: "earnify-official",
+  storageBucket: "earnify-official.firebasestorage.app",
+  messagingSenderId: "392652401236",
+  appId: "1:392652401236:web:00bd6e145cb6ac1f6c9bc1"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let adminPassword = "786"; 
+let adminPassword = "786";
 
 function login(){
   let pass = document.getElementById("adminPass").value;
   if(pass === adminPassword){
     document.getElementById("loginPage").style.display="none";
     document.getElementById("adminPanel").style.display="block";
-    syncData();
+    loadData();
   } else {
     alert("Wrong Password");
   }
 }
 
-// Database se Real-time data laane ke liye
-function syncData(){
-  // 1. Total Users Count
-  db.collection("users").onSnapshot(snap => {
-    document.getElementById("totalUsers").innerText = snap.size;
-    
-    let totalBal = 0;
-    snap.forEach(doc => {
-        totalBal += (doc.data().balance || 0);
+function loadData(){
+
+  // Live Users & Revenue
+  db.collection("users").onSnapshot(snapshot => {
+    document.getElementById("totalUsers").innerText = snapshot.size;
+
+    let totalBalance = 0;
+    snapshot.forEach(doc => {
+      totalBalance += Number(doc.data().balance || 0);
     });
-    
-    // Revenue logic (Demo logic based on your 70/30)
-    let rev = totalBal * 1.5; // Example math
-    document.getElementById("totalRevenue").innerText = rev.toFixed(2);
-    document.getElementById("adminShare").innerText = (rev * 0.7).toFixed(2);
-    document.getElementById("userShare").innerText = (rev * 0.3).toFixed(2);
+
+    document.getElementById("totalRevenue").innerText = totalBalance.toFixed(2);
+    document.getElementById("adminShare").innerText = (totalBalance * 0.7).toFixed(2);
+    document.getElementById("userShare").innerText = (totalBalance * 0.3).toFixed(2);
   });
 
-  // 2. Withdrawal Requests
-  db.collection("withdrawals").where("status", "==", "Pending")
-    .onSnapshot(snap => {
+  // Live Withdrawals
+  db.collection("withdrawals")
+    .where("status","==","Pending")
+    .onSnapshot(snapshot => {
+
       let table = document.getElementById("withdrawTable");
       table.innerHTML = "";
-      if(snap.empty) table.innerHTML = "<tr><td colspan='4'>No pending requests</td></tr>";
-      
-      snap.forEach(doc => {
+
+      if(snapshot.empty){
+        table.innerHTML = "<tr><td colspan='4'>No pending requests</td></tr>";
+        return;
+      }
+
+      snapshot.forEach(doc => {
         let data = doc.data();
+
         table.innerHTML += `
           <tr>
-            <td>${doc.id}</td>
+            <td>${data.phone}</td>
             <td>₹${data.amount}</td>
-            <td>${data.status}</td>
+            <td>${data.upi || "Not Provided"}</td>
             <td>
-              <button class="approve" onclick="updateStatus('${doc.id}', 'Approved')">Approve</button>
-              <button class="reject" onclick="updateStatus('${doc.id}', 'Rejected')">Reject</button>
+              <button class="approve" onclick="approve('${doc.id}','${data.phone}',${data.amount})">Approve</button>
+              <button class="reject" onclick="reject('${doc.id}')">Reject</button>
             </td>
           </tr>
         `;
       });
+  });
+}
+
+async function manualUpdate(){
+  let phone = document.getElementById("userPhone").value;
+  let amount = parseFloat(document.getElementById("newAmount").value);
+
+  if(!phone || isNaN(amount)) return alert("Enter correct details");
+
+  await db.collection("users").doc(phone).set({
+    balance: amount
+  }, {merge:true});
+
+  alert("Balance Updated");
+}
+
+async function approve(id, phone, amount){
+
+  let userRef = db.collection("users").doc(phone);
+
+  await db.runTransaction(async (transaction) => {
+
+    let userDoc = await transaction.get(userRef);
+
+    if(!userDoc.exists) throw "User not found";
+
+    let currentBalance = userDoc.data().balance || 0;
+
+    if(currentBalance < amount) throw "Insufficient Balance";
+
+    transaction.update(userRef, {
+      balance: currentBalance - amount
     });
+
+    transaction.update(
+      db.collection("withdrawals").doc(id),
+      { status: "Approved" }
+    );
+  });
+
+  alert("Withdrawal Approved & Balance Deducted");
 }
 
-// Balance update karne ka function
-async function manualUpdate() {
-    let ph = document.getElementById("userPhone").value;
-    let amt = parseFloat(document.getElementById("newAmount").value);
-    if(!ph || isNaN(amt)) return alert("Data sahi bharo");
+async function reject(id){
+  await db.collection("withdrawals").doc(id).update({
+    status: "Rejected"
+  });
 
-    try {
-        await db.collection("users").doc(ph).set({ balance: amt }, { merge: true });
-        alert("Success! Balance updated.");
-    } catch(e) { alert("Error: " + e.message); }
+  alert("Withdrawal Rejected");
 }
-
-// Withdrawal Approve/Reject karne ke liye
-async function updateStatus(id, newStatus) {
-    try {
-        await db.collection("withdrawals").doc(id).update({ status: newStatus });
-        alert("Request " + newStatus);
-    } catch(e) { alert("Error: " + e.message); }
-}
-
 </script>
+
 </body>
 </html>
