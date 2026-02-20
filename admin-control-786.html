@@ -1,80 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>EarnVeda Admin 786</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: sans-serif; background: #0f172a; color: white; text-align: center; padding: 20px; }
-        .card { background: #1e293b; padding: 20px; border-radius: 12px; max-width: 400px; margin: 20px auto; border: 1px solid #334155; }
-        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
-        button { width: 85%; padding: 12px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; background: #3b82f6; color: white; }
-        .user-box { background: #334155; padding: 10px; margin: 10px 0; border-radius: 8px; text-align: left; border-left: 5px solid #22c55e; }
-    </style>
+    <title>Debug Admin</title>
 </head>
-<body>
+<body style="background:#1a1a2e; color:white; text-align:center;">
 
-    <h2>Admin Panel Status: <span id="status" style="color: #e94560;">Offline</span></h2>
-
-    <div class="card">
-        <h3>Update Balance</h3>
-        <input type="number" id="targetPhone" placeholder="Mobile Number">
-        <input type="number" id="newBalance" placeholder="New Balance (₹)">
-        <button onclick="manualUpdate()">Update Now</button>
-    </div>
-
-    <div id="userListSection" style="max-width: 400px; margin: auto;">
-        <h3>Registered Users</h3>
-        <button style="background: #22c55e; margin-bottom: 10px;" onclick="fetchUsers()">🔄 Refresh List</button>
-        <div id="userDisplay">Click Refresh to Load...</div>
-    </div>
+    <h2>Firebase Connection Test 🔍</h2>
+    <button onclick="testConnection()" style="padding:10px;">Check Balance for 7067007802</button>
+    
+    <div id="result" style="margin-top:20px; font-size:20px; color:yellow;">Status: Waiting...</div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
+        // Yahan apni sahi config dalo agar meri wali galat hai
         const firebaseConfig = { 
             apiKey: "AIzaSyCLrqzC0q_i7EzWdw_aoGRvI-qD_2kMsc", 
             projectId: "earnify-official" 
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        
-        // Status check
-        document.getElementById('status').innerText = "Online ✅";
-        document.getElementById('status').style.color = "#22c55e";
 
-        async function fetchUsers() {
-            const display = document.getElementById('userDisplay');
-            display.innerHTML = "Fetching...";
-            try {
-                const snapshot = await db.collection("users").get();
-                if (snapshot.empty) {
-                    display.innerHTML = "No Users Found.";
-                    return;
-                }
-                let html = "";
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    html += `<div class="user-box">
-                        <b>📱 Phone:</b> ${doc.id}<br>
-                        <b>💰 Balance:</b> ₹${data.balance || 0}
-                    </div>`;
-                });
-                display.innerHTML = html;
-            } catch (e) {
-                display.innerHTML = "Error: " + e.message;
-            }
-        }
-
-        async function manualUpdate() {
-            const phone = document.getElementById('targetPhone').value;
-            const bal = parseFloat(document.getElementById('newBalance').value);
-            if(!phone || isNaN(bal)) return alert("Sahi data dalo!");
+        async function testConnection() {
+            const res = document.getElementById('result');
+            res.innerText = "Searching for 7067007802...";
             
-            await db.collection("users").doc(phone).set({ balance: bal }, { merge: true });
-            alert("Balance Updated!");
-            fetchUsers();
+            try {
+                // Hum direct aapka document dhoond rahe hain
+                const doc = await db.collection("users").doc("7067007802").get();
+                
+                if (doc.exists) {
+                    res.innerHTML = "✅ Data Mil Gaya!<br>Balance: ₹" + doc.data().balance;
+                } else {
+                    res.innerHTML = "❌ Number nahi mila! Firebase mein check karo 'users' collection ke andar '7067007802' hai ya nahi.";
+                }
+            } catch (error) {
+                res.innerHTML = "⚠️ Error: " + error.message;
+            }
         }
     </script>
 </body>
