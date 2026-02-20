@@ -107,11 +107,13 @@ function login(){
 
 function loadData(){
 
-  // Live Users & Revenue
+  // LIVE USERS & REVENUE
   db.collection("users").onSnapshot(snapshot => {
+
     document.getElementById("totalUsers").innerText = snapshot.size;
 
     let totalBalance = 0;
+
     snapshot.forEach(doc => {
       totalBalance += Number(doc.data().balance || 0);
     });
@@ -121,7 +123,8 @@ function loadData(){
     document.getElementById("userShare").innerText = (totalBalance * 0.3).toFixed(2);
   });
 
-  // Live Withdrawals
+
+  // LIVE WITHDRAW REQUESTS
   db.collection("withdrawals")
     .where("status","==","Pending")
     .onSnapshot(snapshot => {
@@ -152,30 +155,54 @@ function loadData(){
   });
 }
 
+
+// MANUAL UPDATE (works whether doc id is phone or random)
 async function manualUpdate(){
+
   let phone = document.getElementById("userPhone").value;
   let amount = parseFloat(document.getElementById("newAmount").value);
 
   if(!phone || isNaN(amount)) return alert("Enter correct details");
 
-  await db.collection("users").doc(phone).set({
-    balance: amount
-  }, {merge:true});
+  let snapshot = await db.collection("users")
+                         .where("phone","==",phone)
+                         .get();
+
+  if(snapshot.empty){
+    alert("User not found");
+    return;
+  }
+
+  snapshot.forEach(async doc => {
+    await db.collection("users").doc(doc.id).update({
+      balance: amount
+    });
+  });
 
   alert("Balance Updated");
 }
 
+
+// APPROVE WITHDRAW
 async function approve(id, phone, amount){
 
-  let userRef = db.collection("users").doc(phone);
+  let userQuery = await db.collection("users")
+                          .where("phone","==",phone)
+                          .get();
+
+  if(userQuery.empty){
+    alert("User not found");
+    return;
+  }
+
+  let userDoc = userQuery.docs[0];
+  let userRef = db.collection("users").doc(userDoc.id);
 
   await db.runTransaction(async (transaction) => {
 
-    let userDoc = await transaction.get(userRef);
+    let userData = await transaction.get(userRef);
 
-    if(!userDoc.exists) throw "User not found";
-
-    let currentBalance = userDoc.data().balance || 0;
+    let currentBalance = userData.data().balance || 0;
 
     if(currentBalance < amount) throw "Insufficient Balance";
 
@@ -189,9 +216,11 @@ async function approve(id, phone, amount){
     );
   });
 
-  alert("Withdrawal Approved & Balance Deducted");
+  alert("Withdrawal Approved");
 }
 
+
+// REJECT
 async function reject(id){
   await db.collection("withdrawals").doc(id).update({
     status: "Rejected"
@@ -199,6 +228,7 @@ async function reject(id){
 
   alert("Withdrawal Rejected");
 }
+
 </script>
 
 </body>
