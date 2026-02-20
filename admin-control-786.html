@@ -1,21 +1,45 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Debug Admin</title>
+    <title>EarnVeda Final Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: white; text-align: center; padding: 20px; }
+        .box { background: #1e293b; padding: 20px; border-radius: 12px; max-width: 400px; margin: 20px auto; border: 1px solid #334155; }
+        input { width: 85%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: #0f172a; color: white; }
+        button { width: 90%; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; background: #3b82f6; color: white; margin-top: 10px; }
+        #error-msg { color: #ff4d4d; background: white; padding: 10px; display: none; margin-top: 10px; border-radius: 5px; font-size: 13px; }
+    </style>
 </head>
-<body style="background:#1a1a2e; color:white; text-align:center;">
+<body>
 
-    <h2>Firebase Connection Test 🔍</h2>
-    <button onclick="testConnection()" style="padding:10px;">Check Balance for 7067007802</button>
-    
-    <div id="result" style="margin-top:20px; font-size:20px; color:yellow;">Status: Waiting...</div>
+    <div id="loginSection" class="box">
+        <h2>Admin Key Required 🔐</h2>
+        <input type="password" id="pass" placeholder="Enter Admin Password">
+        <button onclick="login()">Login</button>
+    </div>
+
+    <div id="adminPanel" class="box" style="display: none;">
+        <h2 style="color: #22c55e;">Control Panel Online ✅</h2>
+        <hr>
+        <h3>Check/Update User</h3>
+        <input type="number" id="phone" placeholder="User Mobile Number">
+        <button onclick="getUser()" style="background: #fbbf24; color: black;">Fetch User Info</button>
+        
+        <div id="userInfo" style="margin-top: 15px; font-weight: bold;"></div>
+        
+        <input type="number" id="newBal" placeholder="New Balance Amount">
+        <button onclick="updateBal()" style="background: #22c55e;">Update Balance</button>
+        
+        <div id="error-msg"></div>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
-        // Yahan apni sahi config dalo agar meri wali galat hai
+        // DHAYAN SE: Ye dono cheezein agar galat hain toh kuch nahi chalega
         const firebaseConfig = { 
             apiKey: "AIzaSyCLrqzC0q_i7EzWdw_aoGRvI-qD_2kMsc", 
             projectId: "earnify-official" 
@@ -23,21 +47,44 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        async function testConnection() {
-            const res = document.getElementById('result');
-            res.innerText = "Searching for 7067007802...";
-            
+        function login() {
+            if(document.getElementById('pass').value === "786") {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+            } else { alert("Galat Password!"); }
+        }
+
+        async function getUser() {
+            const num = document.getElementById('phone').value;
+            const info = document.getElementById('userInfo');
+            const err = document.getElementById('error-msg');
+            err.style.display = "none";
+            info.innerHTML = "Searching...";
+
             try {
-                // Hum direct aapka document dhoond rahe hain
-                const doc = await db.collection("users").doc("7067007802").get();
-                
-                if (doc.exists) {
-                    res.innerHTML = "✅ Data Mil Gaya!<br>Balance: ₹" + doc.data().balance;
+                const doc = await db.collection("users").doc(num).get();
+                if(doc.exists) {
+                    info.innerHTML = "User Found! <br> Current Balance: ₹" + (doc.data().balance || 0);
                 } else {
-                    res.innerHTML = "❌ Number nahi mila! Firebase mein check karo 'users' collection ke andar '7067007802' hai ya nahi.";
+                    info.innerHTML = "❌ Number Not Found in Database!";
                 }
-            } catch (error) {
-                res.innerHTML = "⚠️ Error: " + error.message;
+            } catch (e) {
+                err.style.display = "block";
+                err.innerHTML = "FIREBASE ERROR: " + e.message;
+            }
+        }
+
+        async function updateBal() {
+            const num = document.getElementById('phone').value;
+            const bal = parseFloat(document.getElementById('newBal').value);
+            if(!num || isNaN(bal)) return alert("Sahi data bharo!");
+
+            try {
+                await db.collection("users").doc(num).set({ balance: bal }, { merge: true });
+                alert("Updated Successfully!");
+                getUser();
+            } catch (e) {
+                alert("Update Failed: " + e.message);
             }
         }
     </script>
