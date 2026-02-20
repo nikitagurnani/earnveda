@@ -1,14 +1,19 @@
-html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>EarnVeda Final Admin</title>
+    <title>EarnVeda Master Admin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: sans-serif; background: #0f172a; color: white; text-align: center; padding: 20px; }
         .box { background: #1e293b; padding: 20px; border-radius: 12px; max-width: 400px; margin: 20px auto; border: 1px solid #334155; }
         input { width: 85%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: #0f172a; color: white; }
-        button { width: 90%; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; background: #3b82f6; color: white; margin-top: 10px; }
+        button { width: 90%; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .btn-blue { background: #3b82f6; color: white; }
+        .btn-green { background: #22c55e; color: white; }
+        .btn-red { background: #ef4444; color: white; }
+        .btn-yellow { background: #fbbf24; color: black; }
+        hr { border: 0; border-top: 1px solid #334155; margin: 20px 0; }
         #error-msg { color: #ff4d4d; background: white; padding: 10px; display: none; margin-top: 10px; border-radius: 5px; font-size: 13px; }
     </style>
 </head>
@@ -17,20 +22,28 @@ html>
     <div id="loginSection" class="box">
         <h2>Admin Key Required 🔐</h2>
         <input type="password" id="pass" placeholder="Enter Admin Password">
-        <button onclick="login()">Login</button>
+        <button class="btn-blue" onclick="login()">Login</button>
     </div>
 
     <div id="adminPanel" class="box" style="display: none;">
         <h2 style="color: #22c55e;">Control Panel Online ✅</h2>
-        <hr>
-        <h3>Check/Update User</h3>
-        <input type="number" id="phone" placeholder="User Mobile Number">
-        <button onclick="getUser()" style="background: #fbbf24; color: black;">Fetch User Info</button>
         
-        <div id="userInfo" style="margin-top: 15px; font-weight: bold;"></div>
-        
-        <input type="number" id="newBal" placeholder="New Balance Amount">
-        <button onclick="updateBal()" style="background: #22c55e;">Update Balance</button>
+        <div style="border-bottom: 1px solid #444; padding-bottom: 15px;">
+            <h3>User Management</h3>
+            <input type="number" id="phone" placeholder="User Mobile Number">
+            <button class="btn-yellow" onclick="getUser()">Fetch User Info</button>
+            <div id="userInfo" style="margin: 10px 0; font-weight: bold; color: #3b82f6;"></div>
+            <input type="number" step="0.01" id="newBal" placeholder="New Balance Amount">
+            <button class="btn-green" onclick="updateBal()">Update Balance</button>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3>Fix Next Result 🎮</h3>
+            <p style="font-size: 12px; color: #94a3b8;">Click a color to fix the next outcome</p>
+            <button class="btn-red" style="width: 45%;" onclick="setResult('Red')">Next: RED</button>
+            <button class="btn-green" style="width: 45%;" onclick="setResult('Green')">Next: GREEN</button>
+            <div id="resStatus" style="margin-top: 10px; color: #fbbf24; font-weight: bold;"></div>
+        </div>
         
         <div id="error-msg"></div>
     </div>
@@ -39,7 +52,6 @@ html>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
-        // DHAYAN SE: Ye dono cheezein agar galat hain toh kuch nahi chalega
         const firebaseConfig = { 
             apiKey: "AIzaSyCLrqzC0q_i7EzWdw_aoGRvI-qD_2kMsc", 
             projectId: "earnify-official" 
@@ -57,34 +69,44 @@ html>
         async function getUser() {
             const num = document.getElementById('phone').value;
             const info = document.getElementById('userInfo');
-            const err = document.getElementById('error-msg');
-            err.style.display = "none";
+            if(!num) return alert("Number dalo!");
             info.innerHTML = "Searching...";
 
             try {
                 const doc = await db.collection("users").doc(num).get();
                 if(doc.exists) {
-                    info.innerHTML = "User Found! <br> Current Balance: ₹" + (doc.data().balance || 0);
+                    info.innerHTML = "Current Balance: ₹" + (doc.data().balance || 0);
                 } else {
-                    info.innerHTML = "❌ Number Not Found in Database!";
+                    info.innerHTML = "❌ User Not Found!";
                 }
-            } catch (e) {
-                err.style.display = "block";
-                err.innerHTML = "FIREBASE ERROR: " + e.message;
-            }
+            } catch (e) { alert("Error: " + e.message); }
         }
 
         async function updateBal() {
             const num = document.getElementById('phone').value;
             const bal = parseFloat(document.getElementById('newBal').value);
-            if(!num || isNaN(bal)) return alert("Sahi data bharo!");
+            if(!num || isNaN(bal)) return alert("Sahi Number aur Balance bhariye!");
 
             try {
+                // Direct Number format mein save kar raha hai
                 await db.collection("users").doc(num).set({ balance: bal }, { merge: true });
-                alert("Updated Successfully!");
+                alert("Balance Updated to ₹" + bal);
                 getUser();
+            } catch (e) { alert("Update Failed: " + e.message); }
+        }
+
+        async function setResult(color) {
+            const status = document.getElementById('resStatus');
+            try {
+                // Yeh "game" naam ke collection mein result save karega
+                await db.collection("game").doc("next_result").set({
+                    color: color,
+                    timestamp: new Date()
+                });
+                status.innerHTML = "SUCCESS: Next Color is " + color.toUpperCase();
+                setTimeout(() => { status.innerHTML = ""; }, 3000);
             } catch (e) {
-                alert("Update Failed: " + e.message);
+                alert("Result Fix Failed: " + e.message);
             }
         }
     </script>
