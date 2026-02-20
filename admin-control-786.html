@@ -1,114 +1,166 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>EarnVeda Master Admin</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: sans-serif; background: #0f172a; color: white; text-align: center; padding: 20px; }
-        .box { background: #1e293b; padding: 20px; border-radius: 12px; max-width: 400px; margin: 20px auto; border: 1px solid #334155; }
-        input { width: 85%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: #0f172a; color: white; }
-        button { width: 90%; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .btn-blue { background: #3b82f6; color: white; }
-        .btn-green { background: #22c55e; color: white; }
-        .btn-red { background: #ef4444; color: white; }
-        .btn-yellow { background: #fbbf24; color: black; }
-        hr { border: 0; border-top: 1px solid #334155; margin: 20px 0; }
-        #error-msg { color: #ff4d4d; background: white; padding: 10px; display: none; margin-top: 10px; border-radius: 5px; font-size: 13px; }
-    </style>
+  <title>EarnVeda Master Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {margin:0;font-family:Arial;background:#f4f6f9;}
+    .topbar {background:#111;color:white;padding:15px;font-size:20px; display: flex; justify-content: space-between;}
+    .container {padding:20px;}
+    .cards {display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;}
+    .card {
+      background:white;
+      padding:15px;
+      border-radius:10px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .card b { font-size: 22px; color: #3b82f6; }
+    table { width:100%; background:white; border-collapse:collapse; margin-top:20px; }
+    th, td { padding:12px; border:1px solid #ddd; text-align:center; }
+    button { padding:8px 15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; }
+    .approve {background:green;color:white;}
+    .reject {background:red;color:white;}
+    .login-box { width:300px; margin:100px auto; background:white; padding:20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.2); text-align:center; }
+    input {width:90%;padding:10px;margin:10px 0; border: 1px solid #ccc; border-radius: 5px;}
+  </style>
 </head>
 <body>
 
-    <div id="loginSection" class="box">
-        <h2>Admin Key Required 🔐</h2>
-        <input type="password" id="pass" placeholder="Enter Admin Password">
-        <button class="btn-blue" onclick="login()">Login</button>
+<div id="loginPage">
+  <div class="login-box">
+    <h2>Admin Login</h2>
+    <input type="password" id="adminPass" placeholder="Enter Admin Password">
+    <button onclick="login()" style="background: #111; color: white; width: 100%;">Login</button>
+  </div>
+</div>
+
+<div id="adminPanel" style="display:none;">
+  <div class="topbar">
+    <span>EarnVeda Master Panel</span>
+    <small id="syncStatus" style="font-size: 12px; color: #22c55e;">Connected ●</small>
+  </div>
+  <div class="container">
+
+    <div class="cards">
+      <div class="card">Total Users: <br><b id="totalUsers">0</b></div>
+      <div class="card">Total Revenue: <br>₹<b id="totalRevenue">0</b></div>
+      <div class="card">Admin (70%): <br>₹<b id="adminShare">0</b></div>
+      <div class="card">Users (30%): <br>₹<b id="userShare">0</b></div>
     </div>
 
-    <div id="adminPanel" class="box" style="display: none;">
-        <h2 style="color: #22c55e;">Control Panel Online ✅</h2>
-        
-        <div style="border-bottom: 1px solid #444; padding-bottom: 15px;">
-            <h3>User Management</h3>
-            <input type="number" id="phone" placeholder="User Mobile Number">
-            <button class="btn-yellow" onclick="getUser()">Fetch User Info</button>
-            <div id="userInfo" style="margin: 10px 0; font-weight: bold; color: #3b82f6;"></div>
-            <input type="number" step="0.01" id="newBal" placeholder="New Balance Amount">
-            <button class="btn-green" onclick="updateBal()">Update Balance</button>
-        </div>
-
-        <div style="margin-top: 20px;">
-            <h3>Fix Next Result 🎮</h3>
-            <p style="font-size: 12px; color: #94a3b8;">Click a color to fix the next outcome</p>
-            <button class="btn-red" style="width: 45%;" onclick="setResult('Red')">Next: RED</button>
-            <button class="btn-green" style="width: 45%;" onclick="setResult('Green')">Next: GREEN</button>
-            <div id="resStatus" style="margin-top: 10px; color: #fbbf24; font-weight: bold;"></div>
-        </div>
-        
-        <div id="error-msg"></div>
+    <div style="margin-top: 30px; background: white; padding: 15px; border-radius: 10px;">
+        <h3>Quick Update User Balance</h3>
+        <input type="number" id="userPhone" placeholder="Phone Number" style="width: 40%;">
+        <input type="number" id="newAmount" placeholder="Amount" style="width: 40%;">
+        <button class="approve" onclick="manualUpdate()">Update</button>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <h3>Withdrawal Requests</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="withdrawTable">
+        <tr><td colspan="4">No pending requests</td></tr>
+      </tbody>
+    </table>
 
-    <script>
-        const firebaseConfig = { 
-            apiKey: "AIzaSyCLrqzC0q_i7EzWdw_aoGRvI-qD_2kMsc", 
-            projectId: "earnify-official" 
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+  </div>
+</div>
 
-        function login() {
-            if(document.getElementById('pass').value === "786") {
-                document.getElementById('loginSection').style.display = 'none';
-                document.getElementById('adminPanel').style.display = 'block';
-            } else { alert("Galat Password!"); }
-        }
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
-        async function getUser() {
-            const num = document.getElementById('phone').value;
-            const info = document.getElementById('userInfo');
-            if(!num) return alert("Number dalo!");
-            info.innerHTML = "Searching...";
+<script>
+// Firebase Config
+const firebaseConfig = { 
+    apiKey: "AIzaSyCLrqzC0q_i7EzWdw_aoGRvI-qD_2kMsc", 
+    projectId: "earnify-official" 
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-            try {
-                const doc = await db.collection("users").doc(num).get();
-                if(doc.exists) {
-                    info.innerHTML = "Current Balance: ₹" + (doc.data().balance || 0);
-                } else {
-                    info.innerHTML = "❌ User Not Found!";
-                }
-            } catch (e) { alert("Error: " + e.message); }
-        }
+let adminPassword = "786"; 
 
-        async function updateBal() {
-            const num = document.getElementById('phone').value;
-            const bal = parseFloat(document.getElementById('newBal').value);
-            if(!num || isNaN(bal)) return alert("Sahi Number aur Balance bhariye!");
+function login(){
+  let pass = document.getElementById("adminPass").value;
+  if(pass === adminPassword){
+    document.getElementById("loginPage").style.display="none";
+    document.getElementById("adminPanel").style.display="block";
+    syncData();
+  } else {
+    alert("Wrong Password");
+  }
+}
 
-            try {
-                // Direct Number format mein save kar raha hai
-                await db.collection("users").doc(num).set({ balance: bal }, { merge: true });
-                alert("Balance Updated to ₹" + bal);
-                getUser();
-            } catch (e) { alert("Update Failed: " + e.message); }
-        }
+// Database se Real-time data laane ke liye
+function syncData(){
+  // 1. Total Users Count
+  db.collection("users").onSnapshot(snap => {
+    document.getElementById("totalUsers").innerText = snap.size;
+    
+    let totalBal = 0;
+    snap.forEach(doc => {
+        totalBal += (doc.data().balance || 0);
+    });
+    
+    // Revenue logic (Demo logic based on your 70/30)
+    let rev = totalBal * 1.5; // Example math
+    document.getElementById("totalRevenue").innerText = rev.toFixed(2);
+    document.getElementById("adminShare").innerText = (rev * 0.7).toFixed(2);
+    document.getElementById("userShare").innerText = (rev * 0.3).toFixed(2);
+  });
 
-        async function setResult(color) {
-            const status = document.getElementById('resStatus');
-            try {
-                // Yeh "game" naam ke collection mein result save karega
-                await db.collection("game").doc("next_result").set({
-                    color: color,
-                    timestamp: new Date()
-                });
-                status.innerHTML = "SUCCESS: Next Color is " + color.toUpperCase();
-                setTimeout(() => { status.innerHTML = ""; }, 3000);
-            } catch (e) {
-                alert("Result Fix Failed: " + e.message);
-            }
-        }
-    </script>
+  // 2. Withdrawal Requests
+  db.collection("withdrawals").where("status", "==", "Pending")
+    .onSnapshot(snap => {
+      let table = document.getElementById("withdrawTable");
+      table.innerHTML = "";
+      if(snap.empty) table.innerHTML = "<tr><td colspan='4'>No pending requests</td></tr>";
+      
+      snap.forEach(doc => {
+        let data = doc.data();
+        table.innerHTML += `
+          <tr>
+            <td>${doc.id}</td>
+            <td>₹${data.amount}</td>
+            <td>${data.status}</td>
+            <td>
+              <button class="approve" onclick="updateStatus('${doc.id}', 'Approved')">Approve</button>
+              <button class="reject" onclick="updateStatus('${doc.id}', 'Rejected')">Reject</button>
+            </td>
+          </tr>
+        `;
+      });
+    });
+}
+
+// Balance update karne ka function
+async function manualUpdate() {
+    let ph = document.getElementById("userPhone").value;
+    let amt = parseFloat(document.getElementById("newAmount").value);
+    if(!ph || isNaN(amt)) return alert("Data sahi bharo");
+
+    try {
+        await db.collection("users").doc(ph).set({ balance: amt }, { merge: true });
+        alert("Success! Balance updated.");
+    } catch(e) { alert("Error: " + e.message); }
+}
+
+// Withdrawal Approve/Reject karne ke liye
+async function updateStatus(id, newStatus) {
+    try {
+        await db.collection("withdrawals").doc(id).update({ status: newStatus });
+        alert("Request " + newStatus);
+    } catch(e) { alert("Error: " + e.message); }
+}
+
+</script>
 </body>
 </html>
