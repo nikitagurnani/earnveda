@@ -1,19 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>EarnVeda - Master Admin</title>
+    <title>EarnVeda - Secret Admin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a2e; color: white; padding: 20px; }
-        .admin-box { max-width: 800px; margin: auto; background: #16213e; padding: 20px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        h2 { color: #e94560; }
-        .user-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #0f3460; }
-        .user-table th, .user-table td { border: 1px solid #1a1a2e; padding: 12px; text-align: left; }
-        .user-table th { background: #e94560; }
-        input { padding: 10px; border-radius: 5px; border: none; margin: 5px; }
-        button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-update { background: #27ae60; color: white; }
-        .btn-update:hover { background: #2ecc71; }
+        body { font-family: sans-serif; background: #1a1a2e; color: white; padding: 20px; text-align: center; }
+        .admin-box { max-width: 500px; margin: auto; background: #16213e; padding: 20px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
+        button { padding: 12px 20px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; background: #e94560; color: white; width: 85%; margin-top: 10px; }
+        .user-list { margin-top: 30px; text-align: left; background: #0f3460; padding: 15px; border-radius: 10px; }
         #loginOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #1a1a2e; display: flex; align-items: center; justify-content: center; z-index: 1000; }
     </style>
 </head>
@@ -21,91 +16,64 @@
 
     <div id="loginOverlay">
         <div class="admin-box">
-            <h3>Enter Admin Key 🔐</h3>
-            <input type="password" id="adminPass" placeholder="Enter Password">
-            <button class="btn-update" onclick="checkAuth()">Login</button>
+            <h2>Admin Login 🔐</h2>
+            <input type="password" id="adminPass" placeholder="Enter Admin Password">
+            <button onclick="checkAuth()">Access Control</button>
         </div>
     </div>
 
-    <div class="admin-box" id="adminContent" style="display: none;">
-        <h2>EarnVeda Master Control 👑</h2>
-        
-        <div style="background: #0f3460; padding: 15px; border-radius: 10px;">
-            <h3>Quick Actions</h3>
-            <input type="number" id="targetPhone" placeholder="User Phone Number">
-            <input type="number" id="newBalance" placeholder="New Balance (₹)">
-            <button class="btn-update" onclick="manualUpdate()">Update Balance</button>
+    <div id="adminContent" style="display: none;">
+        <h2>EarnVeda Control Panel 👑</h2>
+        <div class="admin-box">
+            <h3>Manage User Balance</h3>
+            <input type="number" id="targetPhone" placeholder="User Mobile Number">
+            <input type="number" id="newBalance" placeholder="Enter New Amount (₹)">
+            <button style="background: #27ae60;" onclick="manualUpdate()">Update Balance Now</button>
         </div>
 
-        <h3>Active Users List</h3>
-        <table class="user-table" id="userList">
-            <thead>
-                <tr>
-                    <th>Phone</th>
-                    <th>Balance</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="userTableBody">
-                </tbody>
-        </table>
+        <div class="user-list">
+            <h3>Registered Users:</h3>
+            <div id="userDisplay">Loading data...</div>
+        </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
-        const firebaseConfig = { 
-            apiKey: "AIzaSyCLrqzC0q_i7EzWdw_aoGRvI-qD_2kMsc", 
-            projectId: "earnify-official" 
-        };
+        const firebaseConfig = { apiKey: "AIzaSyCLrqzC0q_i7EzWdw_aoGRvI-qD_2kMsc", projectId: "earnify-official" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
         function checkAuth() {
             const pass = document.getElementById('adminPass').value;
-            if(pass === "1234") { // Apna password yahan set karein
+            if(pass === "786") { // Maine aapka password 786 rakha hai
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.getElementById('adminContent').style.display = 'block';
                 fetchUsers();
             } else {
-                alert("Wrong Password!");
+                alert("Galat Password!");
             }
         }
 
         async function fetchUsers() {
-            const tbody = document.getElementById('userTableBody');
-            tbody.innerHTML = "Loading...";
-            
+            const display = document.getElementById('userDisplay');
             const snapshot = await db.collection("users").get();
-            tbody.innerHTML = "";
+            let html = "";
             snapshot.forEach(doc => {
                 const data = doc.data();
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${doc.id}</td>
-                        <td>₹${data.balance || 0}</td>
-                        <td><button onclick="setTarget('${doc.id}')">Edit</button></td>
-                    </tr>
-                `;
+                html += `<p>📱 ${doc.id} - 💰 ₹${data.balance || 0}</p>`;
             });
-        }
-
-        function setTarget(phone) {
-            document.getElementById('targetPhone').value = phone;
+            display.innerHTML = html || "No users found.";
         }
 
         async function manualUpdate() {
             const phone = document.getElementById('targetPhone').value;
             const bal = parseFloat(document.getElementById('newBalance').value);
-            
-            if(!phone || isNaN(bal)) return alert("Data sahi daalo!");
+            if(!phone || isNaN(bal)) return alert("Sahi data bhariye!");
 
-            await db.collection("users").doc(phone).set({
-                balance: bal
-            }, { merge: true });
-            
-            alert("Balance Updated!");
+            await db.collection("users").doc(phone).set({ balance: bal }, { merge: true });
+            alert("Balance Updated Successfully!");
             fetchUsers();
         }
     </script>
