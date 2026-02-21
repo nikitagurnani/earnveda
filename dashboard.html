@@ -17,6 +17,9 @@
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #ddd; }
         .nav-item { cursor: pointer; padding: 12px 0; flex: 1; font-size: 14px; }
         .active-nav { color: #1a73e8; font-weight: bold; }
+        .history-item { border-bottom: 1px solid #eee; padding: 10px; text-align: left; font-size: 14px; }
+        .history-date { color: #888; font-size: 12px; }
+        .history-amount { color: #28a745; font-weight: bold; float: right; }
     </style>
 </head>
 <body>
@@ -36,7 +39,7 @@
     <div id="transTab" class="tab-content">
         <div class="card">
             <h3>Earning History</h3>
-            <div id="historyList">No history yet.</div>
+            <div id="historyList">Loading history...</div>
         </div>
     </div>
 
@@ -74,11 +77,28 @@
             window.location.href = "index.html";
         }
 
-        // Live Balance Display Logic
+        // Live Balance & History Display
         db.ref('users/' + userPhone).on('value', (s) => {
             if(s.exists()){
-                const val = s.val().balance;
-                document.getElementById('bal').innerText = val ? val : "0.00";
+                const userData = s.val();
+                document.getElementById('bal').innerText = userData.balance || "0.00";
+                
+                // History Load Karo
+                let historyHTML = "";
+                if(userData.history){
+                    Object.values(userData.history).reverse().forEach(item => {
+                        historyHTML += `
+                            <div class="history-item">
+                                <span>Ad Reward</span>
+                                <span class="history-amount">+₹${item.amount}</span><br>
+                                <span class="history-date">${item.date}</span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    historyHTML = "No history yet.";
+                }
+                document.getElementById('historyList').innerHTML = historyHTML;
             }
         });
 
@@ -97,29 +117,30 @@
         }
 
         function handleAd() {
-            // Opening Ad
             window.open("https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311", "_blank");
             
             const userRef = db.ref('users/' + userPhone);
             userRef.once('value').then((snapshot) => {
                 let currentBal = 0;
-                
-                // Pura balance nikalna aur check karna
-                if(snapshot.exists()) {
-                    let dbBal = snapshot.val().balance;
-                    currentBal = parseFloat(dbBal) || 0;
+                if(snapshot.exists() && snapshot.val().balance) {
+                    currentBal = parseFloat(snapshot.val().balance);
                 }
                 
-                // Adding ₹0.15
-                let newBal = (currentBal + 0.15).toFixed(2); 
+                let reward = 0.15;
+                let newBal = (currentBal + reward).toFixed(2); 
+                let timestamp = new Date().toLocaleString();
 
-                // Database Update
+                // Update Balance AND Add History Entry
                 userRef.update({
                     balance: newBal
+                });
+                
+                // Alag se history table mein entry
+                userRef.child('history').push({
+                    amount: reward.toFixed(2),
+                    date: timestamp
                 }).then(() => {
-                    console.log("Wallet Updated: " + newBal);
-                }).catch((err) => {
-                    alert("Database Error: " + err.message);
+                    console.log("History & Balance Updated");
                 });
             });
         }
