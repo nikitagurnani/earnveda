@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="monetag" content="c72238220f80276f68c30169d6d8561e">
     <title>EarnVeda - Secure Login</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -91,7 +90,6 @@
             return r.test(p);
         }
 
-        // STEP 1: Pehle SS Confirmation poochenge
         function askConfirmation() {
             const phone = document.getElementById('phone').value.trim();
             const pass = document.getElementById('password').value.trim();
@@ -106,7 +104,6 @@
                 return;
             }
 
-            // Naya Confirmation Pop-up
             const confirmSS = confirm("🛑 WAIT! Kya aapne Number aur Password ka SCREENSHOT (SS) le liya hai?\n\nPassword bhoolne par hum account reset nahi karenge.");
             
             if (confirmSS) {
@@ -116,7 +113,6 @@
             }
         }
 
-        // STEP 2: Agar user 'OK' kare tab login start hoga
         function handleLogin(phone, pass) {
             const btn = document.getElementById('loginBtn');
             btn.innerText = "Processing...";
