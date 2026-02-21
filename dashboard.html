@@ -74,9 +74,11 @@
             window.location.href = "index.html";
         }
 
+        // Live Balance Display Logic
         db.ref('users/' + userPhone).on('value', (s) => {
             if(s.exists()){
-                document.getElementById('bal').innerText = s.val().balance || "0.00";
+                const val = s.val().balance;
+                document.getElementById('bal').innerText = val ? val : "0.00";
             }
         });
 
@@ -95,22 +97,27 @@
         }
 
         function handleAd() {
+            // Opening Ad
             window.open("https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311", "_blank");
             
             const userRef = db.ref('users/' + userPhone);
             userRef.once('value').then((snapshot) => {
                 let currentBal = 0;
-                if(snapshot.exists() && snapshot.val().balance) {
-                    currentBal = parseFloat(snapshot.val().balance);
+                
+                // Pura balance nikalna aur check karna
+                if(snapshot.exists()) {
+                    let dbBal = snapshot.val().balance;
+                    currentBal = parseFloat(dbBal) || 0;
                 }
                 
-                // Reward set to 0.15
+                // Adding ₹0.15
                 let newBal = (currentBal + 0.15).toFixed(2); 
 
+                // Database Update
                 userRef.update({
                     balance: newBal
                 }).then(() => {
-                    alert("Success! ₹0.15 added to your wallet.");
+                    console.log("Wallet Updated: " + newBal);
                 }).catch((err) => {
                     alert("Database Error: " + err.message);
                 });
