@@ -75,7 +75,6 @@
   </div>
 </div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
@@ -92,7 +91,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let adminPassword = "786";
+// Naya Bulletproof Password Set Kar Diya Gaya Hai
+let adminPassword = "EV#99!Admin*Secure%23";
 
 function login(){
   let pass = document.getElementById("adminPass").value;
@@ -156,7 +156,7 @@ function loadData(){
 }
 
 
-// MANUAL UPDATE (works whether doc id is phone or random)
+// MANUAL UPDATE
 async function manualUpdate(){
 
   let phone = document.getElementById("userPhone").value;
