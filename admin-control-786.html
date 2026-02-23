@@ -3,24 +3,23 @@
 <head>
   <title>EarnVeda Master Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
   <style>
     body {margin:0;font-family:Arial;background:#f4f6f9;}
     .topbar {background:#111;color:white;padding:15px;font-size:20px; display: flex; justify-content: space-between;}
     .container {padding:20px;}
-    .cards {display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;}
-    .card {
-      background:white;
-      padding:15px;
-      border-radius:10px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.1);
-      text-align: center;
-    }
+    .tab-btn { padding: 10px 20px; cursor: pointer; background: #ddd; border: none; font-weight: bold; }
+    .active-tab { background: #1a73e8; color: white; }
+    .content-section { display: none; margin-top: 20px; }
+    .active-section { display: block; }
+    .cards {display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;}
+    .card { background:white; padding:15px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1); text-align: center; }
     .card b { font-size: 22px; color: #3b82f6; }
-    table { width:100%; background:white; border-collapse:collapse; margin-top:20px; }
-    th, td { padding:12px; border:1px solid #ddd; text-align:center; }
-    button { padding:8px 15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; }
-    .approve {background:green;color:white;}
-    .reject {background:red;color:white;}
+    table { width:100%; background:white; border-collapse:collapse; margin-top:10px; }
+    th, td { padding:12px; border:1px solid #ddd; text-align:center; font-size: 13px; }
+    th { background: #f8f9fa; }
+    .approve {background:green;color:white; padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer;}
     .login-box { width:300px; margin:100px auto; background:white; padding:20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.2); text-align:center; }
     input {width:90%;padding:10px;margin:10px 0; border: 1px solid #ccc; border-radius: 5px;}
   </style>
@@ -31,7 +30,7 @@
   <div class="login-box">
     <h2>Admin Login</h2>
     <input type="password" id="adminPass" placeholder="Enter Admin Password">
-    <button onclick="login()" style="background: #111; color: white; width: 100%;">Login</button>
+    <button onclick="login()" style="background: #111; color: white; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">Login</button>
   </div>
 </div>
 
@@ -42,46 +41,52 @@
   </div>
 
   <div class="container">
-
-    <div class="cards">
-      <div class="card">Total Users <br><b id="totalUsers">0</b></div>
-      <div class="card">Total Revenue <br>₹<b id="totalRevenue">0</b></div>
-      <div class="card">Admin (70%) <br>₹<b id="adminShare">0</b></div>
-      <div class="card">Users (30%) <br>₹<b id="userShare">0</b></div>
+    <div class="tabs">
+        <button id="btn1" class="tab-btn active-tab" onclick="showTab('stats')">Main Stats</button>
+        <button id="btn2" class="tab-btn" onclick="showTab('users')">User Data Page</button>
     </div>
 
-    <div style="margin-top: 30px; background: white; padding: 15px; border-radius: 10px;">
-      <h3>Manual Balance Update</h3>
-      <input type="text" id="userPhone" placeholder="Phone Number">
-      <input type="number" id="newAmount" placeholder="New Balance">
-      <button class="approve" onclick="manualUpdate()">Update</button>
+    <div id="stats" class="content-section active-section">
+        <div class="cards">
+          <div class="card">Total Users <br><b id="totalUsers">0</b></div>
+          <div class="card">Estimated Revenue <br>₹<b id="totalRevenue">0</b></div>
+          <div class="card">Admin Share (70%) <br>₹<b id="adminShare">0</b></div>
+          <div class="card">User Payouts (30%) <br>₹<b id="userShare">0</b></div>
+        </div>
+
+        <div style="margin-top: 30px; background: white; padding: 15px; border-radius: 10px;">
+          <h3>Update User Balance</h3>
+          <input type="text" id="targetPhone" placeholder="User Phone">
+          <input type="number" id="newAmount" placeholder="New Balance">
+          <button class="approve" onclick="manualUpdate()">Update Now</button>
+        </div>
     </div>
 
-    <h3>Withdrawal Requests</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Phone</th>
-          <th>Amount</th>
-          <th>UPI ID</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="withdrawTable">
-        <tr><td colspan="4">No pending requests</td></tr>
-      </tbody>
-    </table>
+    <div id="users" class="content-section">
+        <h3>Registered Users Activity</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Phone Number</th>
+              <th>Live Balance</th>
+              <th>Ads Watched</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="userTable">
+            <tr><td colspan="4">Loading...</td></tr>
+          </tbody>
+        </table>
+    </div>
 
   </div>
 </div>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyCLrqzCQq_i7EzWdw_aoGRvIHzgcAQFuvI",
   authDomain: "earnify-official.firebaseapp.com",
+  databaseURL: "https://earnify-official-default-rtdb.firebaseio.com",
   projectId: "earnify-official",
   storageBucket: "earnify-official.firebasestorage.app",
   messagingSenderId: "392652401236",
@@ -89,147 +94,67 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const db = firebase.database();
 
-// Naya Bulletproof Password Set Kar Diya Gaya Hai
+// Wahi purana password jo aapne pehle rakha tha
 let adminPassword = "EV#99!Admin*Secure%23";
 
 function login(){
-  let pass = document.getElementById("adminPass").value;
-  if(pass === adminPassword){
+  if(document.getElementById("adminPass").value === adminPassword){
     document.getElementById("loginPage").style.display="none";
     document.getElementById("adminPanel").style.display="block";
     loadData();
-  } else {
-    alert("Wrong Password");
-  }
+  } else { alert("Wrong Password"); }
+}
+
+function showTab(tabId) {
+    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active-section'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
+    document.getElementById(tabId).classList.add('active-section');
+    if(tabId === 'stats') document.getElementById('btn1').classList.add('active-tab');
+    else document.getElementById('btn2').classList.add('active-tab');
 }
 
 function loadData(){
+  db.ref('users').on('value', (snapshot) => {
+    const data = snapshot.val();
+    let totalU = 0;
+    let totalB = 0;
+    let tableHTML = "";
 
-  // LIVE USERS & REVENUE
-  db.collection("users").onSnapshot(snapshot => {
+    if(data) {
+        Object.keys(data).forEach(phone => {
+            totalU++;
+            let bal = parseFloat(data[phone].balance || 0);
+            totalB += bal;
+            let ads = data[phone].history ? Object.keys(data[phone].history).length : 0;
 
-    document.getElementById("totalUsers").innerText = snapshot.size;
+            tableHTML += `<tr>
+                <td>${phone}</td>
+                <td>₹${bal.toFixed(2)}</td>
+                <td>${ads} Ads</td>
+                <td style="color:green;">Active</td>
+            </tr>`;
+        });
+    }
 
-    let totalBalance = 0;
-
-    snapshot.forEach(doc => {
-      totalBalance += Number(doc.data().balance || 0);
-    });
-
-    document.getElementById("totalRevenue").innerText = totalBalance.toFixed(2);
-    document.getElementById("adminShare").innerText = (totalBalance * 0.7).toFixed(2);
-    document.getElementById("userShare").innerText = (totalBalance * 0.3).toFixed(2);
-  });
-
-
-  // LIVE WITHDRAW REQUESTS
-  db.collection("withdrawals")
-    .where("status","==","Pending")
-    .onSnapshot(snapshot => {
-
-      let table = document.getElementById("withdrawTable");
-      table.innerHTML = "";
-
-      if(snapshot.empty){
-        table.innerHTML = "<tr><td colspan='4'>No pending requests</td></tr>";
-        return;
-      }
-
-      snapshot.forEach(doc => {
-        let data = doc.data();
-
-        table.innerHTML += `
-          <tr>
-            <td>${data.phone}</td>
-            <td>₹${data.amount}</td>
-            <td>${data.upi || "Not Provided"}</td>
-            <td>
-              <button class="approve" onclick="approve('${doc.id}','${data.phone}',${data.amount})">Approve</button>
-              <button class="reject" onclick="reject('${doc.id}')">Reject</button>
-            </td>
-          </tr>
-        `;
-      });
+    document.getElementById("totalUsers").innerText = totalU;
+    document.getElementById("totalRevenue").innerText = totalB.toFixed(2);
+    // 70% Admin ko, 30% Users ko (hisaab ke liye)
+    document.getElementById("adminShare").innerText = (totalB * 0.70).toFixed(2);
+    document.getElementById("userShare").innerText = (totalB * 0.30).toFixed(2);
+    document.getElementById("userTable").innerHTML = tableHTML;
   });
 }
 
-
-// MANUAL UPDATE
-async function manualUpdate(){
-
-  let phone = document.getElementById("userPhone").value;
-  let amount = parseFloat(document.getElementById("newAmount").value);
-
-  if(!phone || isNaN(amount)) return alert("Enter correct details");
-
-  let snapshot = await db.collection("users")
-                         .where("phone","==",phone)
-                         .get();
-
-  if(snapshot.empty){
-    alert("User not found");
-    return;
+function manualUpdate(){
+  let p = document.getElementById("targetPhone").value;
+  let a = document.getElementById("newAmount").value;
+  if(p && a) {
+    db.ref('users/'+p).update({ balance: parseFloat(a).toFixed(2) })
+    .then(() => alert("Updated!"));
   }
-
-  snapshot.forEach(async doc => {
-    await db.collection("users").doc(doc.id).update({
-      balance: amount
-    });
-  });
-
-  alert("Balance Updated");
 }
-
-
-// APPROVE WITHDRAW
-async function approve(id, phone, amount){
-
-  let userQuery = await db.collection("users")
-                          .where("phone","==",phone)
-                          .get();
-
-  if(userQuery.empty){
-    alert("User not found");
-    return;
-  }
-
-  let userDoc = userQuery.docs[0];
-  let userRef = db.collection("users").doc(userDoc.id);
-
-  await db.runTransaction(async (transaction) => {
-
-    let userData = await transaction.get(userRef);
-
-    let currentBalance = userData.data().balance || 0;
-
-    if(currentBalance < amount) throw "Insufficient Balance";
-
-    transaction.update(userRef, {
-      balance: currentBalance - amount
-    });
-
-    transaction.update(
-      db.collection("withdrawals").doc(id),
-      { status: "Approved" }
-    );
-  });
-
-  alert("Withdrawal Approved");
-}
-
-
-// REJECT
-async function reject(id){
-  await db.collection("withdrawals").doc(id).update({
-    status: "Rejected"
-  });
-
-  alert("Withdrawal Rejected");
-}
-
 </script>
-
 </body>
 </html>
