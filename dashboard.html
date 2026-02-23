@@ -77,13 +77,11 @@
             window.location.href = "index.html";
         }
 
-        // Live Balance & History Display
         db.ref('users/' + userPhone).on('value', (s) => {
             if(s.exists()){
                 const userData = s.val();
                 document.getElementById('bal').innerText = userData.balance || "0.00";
                 
-                // History Load Karo
                 let historyHTML = "";
                 if(userData.history){
                     Object.values(userData.history).reverse().forEach(item => {
@@ -117,7 +115,8 @@
         }
 
         function handleAd() {
-            window.open("https://www.effectivegatecpm.com/bifuu5v6ex?key=0ee07ca35e1ad46941096148394ad311", "_blank");
+            // ADSTERRA LINK REMOVED FOR CLEAN EXPERIENCE
+            alert("Setting up new safe ad unit. Please wait.");
             
             const userRef = db.ref('users/' + userPhone);
             userRef.once('value').then((snapshot) => {
@@ -130,17 +129,13 @@
                 let newBal = (currentBal + reward).toFixed(2); 
                 let timestamp = new Date().toLocaleString();
 
-                // Update Balance AND Add History Entry
                 userRef.update({
                     balance: newBal
                 });
                 
-                // Alag se history table mein entry
                 userRef.child('history').push({
                     amount: reward.toFixed(2),
                     date: timestamp
-                }).then(() => {
-                    console.log("History & Balance Updated");
                 });
             });
         }
