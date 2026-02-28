@@ -77,9 +77,6 @@
 
         if (!userPhone) { window.location.href = "index.html"; }
 
-        let taskStartTime = 0;
-        let isTaskActive = false;
-
         db.ref('users/' + userPhone).on('value', (s) => {
             if(s.exists()){
                 const userData = s.val();
@@ -106,70 +103,54 @@
             el.classList.add('active-nav');
         }
 
+        // NEW TIMER LOGIC
+        let countdown;
         function handleAd() {
             const adLink = "https://shrinkme.click/Prsqzz1N";
             window.open(adLink, "_blank");
 
-            isTaskActive = true;
-            taskStartTime = new Date().getTime(); // Record start time
-            
             let btn = document.getElementById('adBtn');
             let msg = document.getElementById('statusMsg');
             btn.disabled = true;
-            btn.innerText = "Task in Progress...";
-            msg.innerText = "⚠️ Solve captcha & stay on ad page for 60s!";
-            msg.style.color = "orange";
+            
+            let timeLeft = 60;
+            countdown = setInterval(() => {
+                timeLeft--;
+                btn.innerText = `Wait ${timeLeft}s to Verify...`;
+                msg.innerText = "⚠️ Solve captcha & stay on ad page!";
+                msg.style.color = "orange";
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdown);
+                    btn.disabled = false;
+                    btn.innerText = "✅ CLAIM ₹0.05 REWARD";
+                    btn.style.background = "#28a745";
+                    btn.onclick = finalizeReward; // Change function to claim
+                }
+            }, 1000);
         }
 
-        // Handle User Returning to Dashboard
-        document.addEventListener("visibilitychange", function() {
-            if (document.visibilityState === 'visible' && isTaskActive) {
-                let currentTime = new Date().getTime();
-                let timeSpent = (currentTime - taskStartTime) / 1000; // in seconds
-
-                if (timeSpent < 60) {
-                    // USER RETURNED TOO EARLY
-                    isTaskActive = false;
-                    resetTaskButton();
-                    document.getElementById('statusMsg').innerText = "❌ Please click on the captcha button and stay for 1 min!";
-                    document.getElementById('statusMsg').style.color = "red";
-                    alert("Error: Please verify the captcha and stay on the page for 60 seconds to earn reward.");
-                } else {
-                    // TASK SUCCESSFUL
-                    finalizeReward();
-                }
-            }
-        });
-
         function finalizeReward() {
-            if(!isTaskActive) return;
-            isTaskActive = false;
-
             const userRef = db.ref('users/' + userPhone);
             userRef.once('value').then((snapshot) => {
-                let currentBal = 0;
-                if(snapshot.exists() && snapshot.val().balance) {
-                    currentBal = parseFloat(snapshot.val().balance);
-                }
-                
-                let reward = 0.05; // SET TO 0.05 AS PER YOUR REQUEST
+                let currentBal = parseFloat(snapshot.val().balance || 0);
+                let reward = 0.05;
                 let newBal = (currentBal + reward).toFixed(2);
                 let timestamp = new Date().toLocaleString();
 
-                userRef.update({ balance: newBal });
-                userRef.child('history').push({ amount: reward.toFixed(2), date: timestamp });
-
-                resetTaskButton();
-                document.getElementById('statusMsg').innerText = "✅ Reward Added Successfully!";
-                document.getElementById('statusMsg').style.color = "green";
-                alert("Success! ₹0.05 added to your wallet.");
+                userRef.update({ balance: newBal }).then(() => {
+                    userRef.child('history').push({ amount: reward.toFixed(2), date: timestamp });
+                    
+                    // Reset Button to Original State
+                    let btn = document.getElementById('adBtn');
+                    btn.innerText = "📺 Watch Ad & Earn ₹0.05";
+                    btn.style.background = "#1a73e8";
+                    btn.onclick = handleAd; 
+                    document.getElementById('statusMsg').innerText = "✅ Reward Added Successfully!";
+                    document.getElementById('statusMsg').style.color = "green";
+                    alert("Success! ₹0.05 added to your wallet.");
+                });
             });
-        }
-
-        function resetTaskButton() {
-            let btn = document.getElementById('adBtn');
-            btn.disabled = false;
-            btn.innerText = "📺 Watch Ad & Earn ₹0.05";
         }
 
         function logout() { localStorage.clear(); window.location.href = "index.html"; }
